@@ -427,6 +427,16 @@ const OLD_QUAL_MAP = {
 
 // ══════════ STATE ══════════
 function emptyMats(){return Object.fromEntries(TIERS.map(t=>[t,{rune:'',soul:'',relic:''}]));}
+function mergeCityMats(cloudM,localM){
+  const base=emptyMats(),out={};
+  TIERS.forEach(tier=>{out[tier]={...base[tier],...(cloudM?.[tier]||{}),...(localM?.[tier]||{})};});
+  return out;
+}
+function parseMatKey(key){
+  const i=key.lastIndexOf('-');
+  return i<0?[key,'']:[key.slice(0,i),key.slice(i+1)];
+}
+function listingIdMatch(a,b){return String(a)===String(b);}
 
 let state = {
   lang:'pl', premium:false, activeCity:'Bridgewatch', activeTab:'items',
@@ -439,6 +449,7 @@ let state = {
   sort: {key:'none', dir:'asc'},
 };
 let nextId = 1;
+let nextListingId = 1;
 
 // ══════════ TRANSLATION HELPERS ══════════
 const t    = k => LANGS[state.lang][k] ?? LANGS.pl[k] ?? k;
@@ -1140,7 +1151,7 @@ function buildIconModal(){
 
 // ══════════ RENDER ══════════
 function render(){buildApp();bind();updateNickDisplay();}
-function refreshAllResults(){getItems().forEach(i=>refreshOne(i));save();}
+function refreshAllResults(){getItems().forEach(i=>refreshOne(i));}
 function refreshOne(item){const el=document.querySelector(`[data-results="${item.id}"]`);if(el)el.innerHTML=buildResults(item);}
 function rebuildCard(item){
   const old=document.querySelector(`[data-item="${item.id}"]`);if(!old)return;
@@ -1253,7 +1264,7 @@ function createListing(itemId){
   const to=+item.rangeTo;
   const fee=sum&&item.sellOrder?sum.sp*(state.settings.setupFee/100)*sum.qty:0;
   state.listings.push({
-    id:Date.now()+Math.random(),
+    id:nextListingId++,
     listedAt:Date.now(),
     itemId,
     city:state.activeCity,
@@ -1273,9 +1284,9 @@ function createListing(itemId){
 }
 
 function soldListing(lid){
-  const l=state.listings.find(x=>x.id===lid);if(!l)return;
-  state.salesHistory.push({id:lid,soldAt:Date.now(),listedAt:l.listedAt,name:l.name,tier:l.tier,enc:l.enc,profit:l.profit,qty:l.qty,city:l.city||null});
-  state.listings=state.listings.filter(x=>x.id!==lid);
+  const l=state.listings.find(x=>listingIdMatch(x.id,lid));if(!l)return;
+  state.salesHistory.push({id:l.id,soldAt:Date.now(),listedAt:l.listedAt,name:l.name,tier:l.tier,enc:l.enc,profit:l.profit,qty:l.qty,city:l.city||null});
+  state.listings=state.listings.filter(x=>!listingIdMatch(x.id,lid));
   // uncheck inSummary on the source item
   setItem(l.itemId,it=>{it.inSummary=false;});
   save();render();
@@ -1325,13 +1336,15 @@ function bind(){
   });
   qsa('[data-ctile]').forEach(el=>el.addEventListener('click',e=>{
     e.stopPropagation();const c=el.dataset.ctile;
-    if(c!==state.activeCity){state.activeCity=c;render();}
+    if(c!==state.activeCity){save();state.activeCity=c;render();}
     else{const p=document.getElementById('city-panel');if(p)p.classList.remove('open');}
   }));
   // Materials
   qsa('[data-mat]').forEach(el=>el.addEventListener('input',()=>{
-    const[tier,m]=el.dataset.mat.split('-');
+    const[tier,m]=parseMatKey(el.dataset.mat);
+    if(!tier||!m)return;
     if(!state.materialsByCity[state.activeCity])state.materialsByCity[state.activeCity]=emptyMats();
+    if(!state.materialsByCity[state.activeCity][tier])state.materialsByCity[state.activeCity][tier]={rune:'',soul:'',relic:''};
     state.materialsByCity[state.activeCity][tier][m]=el.value;
     save();
     refreshAllResults();
@@ -1392,13 +1405,13 @@ function bind(){
     const tm=e.target.closest('[data-tomarket]');
     if(tm){createListing(+tm.dataset.tomarket);return;}
     const sold=e.target.closest('[data-sold]');
-    if(sold){soldListing(+sold.dataset.sold);return;}
+    if(sold){soldListing(sold.dataset.sold);return;}
     // Remove from summary tab (uncheck inSummary)
     const rs=e.target.closest('[data-rmsum]');
     if(rs){const id=+rs.dataset.rmsum;setItem(id,it=>{it.inSummary=false;});save();render();return;}
     // Remove listing from awaiting tab (cancel listing)
     const rl=e.target.closest('[data-rmlisting]');
-    if(rl){state.listings=state.listings.filter(x=>x.id!==+rl.dataset.rmlisting);save();render();return;}
+    if(rl){state.listings=state.listings.filter(x=>!listingIdMatch(x.id,+rl.dataset.rmlisting));save();render();return;}
   });
   // Clear stats button (rendered inside #tc, bind after render)
   on('btn-clear-stats','click',()=>{
@@ -1515,6 +1528,7 @@ function save(){
     lang:state.lang,premium:state.premium,activeCity:state.activeCity,activeTab:state.activeTab,
     materialsByCity:state.materialsByCity,settings:state.settings,itemsByCity:state.itemsByCity,nextId,
     listings:state.listings,salesHistory:state.salesHistory,sort:state.sort,
+    nextListingId,
     updated_at_ts:Date.now()
   }));}catch(_){}
 }
@@ -1526,11 +1540,19 @@ function load(){
     state.lang=d.lang??'pl';state.premium=d.premium??false;
     state.activeCity=d.activeCity??'Bridgewatch';state.activeTab=d.activeTab??'items';
     state.settings={...state.settings,...(d.settings||{})};
-    state.listings=d.listings??[];
+    state.listings=(d.listings??[]).map(l=>({...l,city:l.city||null}));
     state.salesHistory=d.salesHistory??[];
     if(d.sort)state.sort=d.sort;
+    nextListingId=d.nextListingId??1;
+    state.listings.forEach(l=>{
+      if(typeof l.id!=='number'||!Number.isInteger(l.id))l.id=nextListingId++;
+    });
+    if(state.listings.length){
+      const maxId=state.listings.reduce((m,l)=>Math.max(m,Number(l.id)||0),0);
+      nextListingId=Math.max(nextListingId,maxId+1);
+    }
     CITY_LIST.forEach(c=>{
-      if(d.materialsByCity?.[c])state.materialsByCity[c]={...emptyMats(),...d.materialsByCity[c]};
+      if(d.materialsByCity?.[c])state.materialsByCity[c]=mergeCityMats(null,d.materialsByCity[c]);
       if(d.itemsByCity?.[c])state.itemsByCity[c]=(d.itemsByCity[c]||[]).map(i=>{
         const type=OLD_TYPE_MAP[i.type]||i.type||'1h';
         const quality=OLD_QUAL_MAP[i.quality]||i.quality||'Normal';
@@ -1613,8 +1635,9 @@ async function saveToCloud(){
   if(!cloudNick)return;
   setSyncStatus('syncing');
   try{
-    const raw=localStorage.getItem('ao_ec_v7')||'{}';
-    const payload={nick:cloudNick,data:JSON.parse(raw),updated_at:new Date().toISOString()};
+    save();
+    const data=JSON.parse(localStorage.getItem('ao_ec_v7')||'{}');
+    const payload={nick:cloudNick,data,updated_at:new Date().toISOString()};
     const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
       method:'POST',
       headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},
@@ -1622,6 +1645,17 @@ async function saveToCloud(){
     });
     setSyncStatus(r.ok?'ok':'error');
   }catch{setSyncStatus('error');}
+}
+
+function applyCloudData(cloudData){
+  const local=JSON.parse(localStorage.getItem('ao_ec_v7')||'{}');
+  const merged={...cloudData};
+  merged.materialsByCity={};
+  CITY_LIST.forEach(c=>{
+    merged.materialsByCity[c]=mergeCityMats(cloudData.materialsByCity?.[c],local.materialsByCity?.[c]);
+  });
+  merged.updated_at_ts=Math.max(local.updated_at_ts||0,cloudData.updated_at_ts||0);
+  localStorage.setItem('ao_ec_v7',JSON.stringify(merged));
 }
 
 function scheduleSync(){
@@ -1743,7 +1777,7 @@ load();
       const dataTime=row.data?.updated_at_ts||0;
       const bestCloudTime=Math.max(cloudTime,dataTime);
       if(bestCloudTime>localTime){
-        localStorage.setItem('ao_ec_v7',JSON.stringify(row.data));
+        applyCloudData(row.data);
         load();render();
       } else if(localTime>bestCloudTime){
         await saveToCloud();
