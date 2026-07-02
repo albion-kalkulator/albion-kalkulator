@@ -237,9 +237,6 @@ select.fi option{background:var(--s2)}
 .stab-card-main{flex:1;min-width:0}
 .stab-card-icon{flex-shrink:0;order:-1}
 .stab-card-icon img{width:120px;height:120px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.35);padding:8px;display:block}
-.sum-head-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:0}
-.sum-head-icon{flex-shrink:0;margin-right:4px}
-.sum-head-icon img{width:112px;height:112px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.35);padding:8px;display:block}
 .stab-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .stab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 /* AWAITING TAB */
@@ -1593,8 +1590,6 @@ function buildResults(item){
 
 function buildSummary(item,sum){
   const from=+item.rangeFrom,to=+item.rangeTo;
-  const mats=getMats();
-  const tc=TIER_C[item.tier];
   const pl=state.lang==='pl';
   if(!sum)return`<div class="sum-card"><span class="sum-na">${t('fill_range')} ${item.tier}${ENC[from]}→${item.tier}${ENC[to]},${t('to_see_sum')}</span></div>`;
 
@@ -1612,16 +1607,6 @@ function buildSummary(item,sum){
   const g = totalProfit >= 0;
 
   return`<div class="sum-card">
-    <div class="sum-head">
-      ${(()=>{const u=itemFinalIconUrl(item);return u?`<div class="sum-head-icon"><img src="${esc(u)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:'';})()}
-      <div class="sum-head-main">
-        ${t('s_title')}
-        <span style="color:${tc};font-size:.95rem">${item.tier}${ENC[from]} → ${item.tier}${ENC[to]}</span>
-        <span class="sum-badge">× ${sum.qty} ${pl?'szt.':'units'}</span>
-        <span class="sum-badge">${tQ(item.quality)}</span>
-        <span class="sum-badge">${item.sellOrder?'📋 Sell Order':t('instant')}</span>
-      </div>
-    </div>
     <div class="sum-lines">
       <div class="sum-line">
         <span class="sum-line-lbl">${pl?'Koszt materiałów':'Material cost'}</span>
