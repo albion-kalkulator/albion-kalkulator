@@ -99,6 +99,9 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 .sort-btn{display:flex;align-items:center;gap:5px;padding:6px 13px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;user-select:none;white-space:nowrap}
 .sort-btn:hover{border-color:var(--gold-d);color:var(--text)}
 .sort-btn.active{background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.06));border-color:var(--gold);color:var(--gold-l)}
+.fav-btn{background:transparent;border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:1.15rem;color:var(--muted);transition:all .2s;line-height:1;flex-shrink:0}
+.fav-btn:hover{border-color:var(--gold-d);color:var(--gold-l)}
+.fav-btn.on{color:#ffd700;border-color:rgba(255,215,0,.55);background:rgba(255,215,0,.1);text-shadow:0 0 8px rgba(255,215,0,.45)}
 .add-btn{display:flex;align-items:center;justify-content:center;gap:9px;padding:16px;background:var(--s1);border:2px dashed var(--border);border-radius:12px;cursor:pointer;color:var(--muted);font-size:.95rem;transition:all .2s;user-select:none}
 .add-btn:hover{border-color:var(--gold-d);color:var(--gold)}
 .item-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -1029,7 +1032,7 @@ function newItem(){
     type:'1h', tier:'T4', quality:'Excellent',
     prices:{p0:'',p1:'',p2:'',p3:''}, sellOrder:true,
     qty:1, dailyVol:'', rangeFrom:0, rangeTo:3,
-    inSummary:false,
+    inSummary:false, favorite:false,
   };
 }
 
@@ -1246,6 +1249,12 @@ function buildSettings(){
 function sortItems(items){
   const mats=getMats();
   const {key,dir}=state.sort;
+  if(key==='favorite'){
+    return[...items].sort((a,b)=>{
+      const fa=a.favorite?1:0, fb=b.favorite?1:0;
+      return dir==='asc'?fb-fa:fa-fb;
+    });
+  }
   if(key==='none')return items;
   const TIER_ORDER=['T2','T3','T4','T5','T6','T7','T8'];
   const scored=items.map(item=>{
@@ -1273,6 +1282,7 @@ function buildItems(){
   const {key,dir}=state.sort;
   const SORTS=[
     {k:'none',  lpl:'Domyślnie',       len:'Default'},
+    {k:'favorite',lpl:'Ulubione',      len:'Favorites'},
     {k:'tier',  lpl:'Tier',            len:'Tier'},
     {k:'roi',   lpl:'Stopa zwrotu',    len:'ROI'},
     {k:'invest',lpl:'Inwestycja',      len:'Investment'},
@@ -1496,6 +1506,7 @@ function buildItemCard(item){
         </div>
       </div>
       <div class="item-ctrl">
+        <button type="button" class="fav-btn${item.favorite?' on':''}" data-fav="${item.id}" title="${state.lang==='pl'?'Ulubione':'Favorite'}">${item.favorite?'★':'☆'}</button>
         <label class="so-btn${item.sellOrder?' on':''}">
           <input type="checkbox" data-f="${item.id}-sellOrder"${item.sellOrder?' checked':''}>
           📋 ${state.lang==='pl'?'Zlecenie sprzedaży':'Sell Order'}
@@ -1995,6 +2006,11 @@ function bindCard(el){
     const evts=inp.type==='checkbox'?['change']:['input','change'];
     evts.forEach(ev=>inp.addEventListener(ev,()=>handleF(inp)));
   });
+  el.querySelectorAll('[data-fav]').forEach(btn=>on(btn,'click',()=>{
+    const id=+btn.dataset.fav;
+    setItem(id,it=>{it.favorite=!it.favorite;});
+    save();render();
+  }));
   el.querySelectorAll('[data-rm]').forEach(btn=>on(btn,'click',()=>{
     state.itemsByCity[state.activeCity]=state.itemsByCity[state.activeCity].filter(i=>i.id!==+btn.dataset.rm);render();
   }));
@@ -2103,7 +2119,7 @@ function load(){
       if(d.itemsByCity?.[c])state.itemsByCity[c]=(d.itemsByCity[c]||[]).map(i=>{
         const type=OLD_TYPE_MAP[i.type]||i.type||'1h';
         const quality=OLD_QUAL_MAP[i.quality]||i.quality||'Normal';
-        return{rangeFrom:0,rangeTo:3,quality:'Normal',sellOrder:false,qty:1,dailyVol:'',inSummary:false,uniqueBaseName:'',...i,type,quality};
+        return{rangeFrom:0,rangeTo:3,quality:'Normal',sellOrder:false,qty:1,dailyVol:'',inSummary:false,favorite:false,uniqueBaseName:'',...i,type,quality};
       });
     });
     nextId=d.nextId??(1+Math.max(0,...CITY_LIST.flatMap(c=>(state.itemsByCity[c]||[]).map(i=>i.id||0))));
