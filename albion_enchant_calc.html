@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<!-- build: guild-market-v2 -->
+<!-- build: 2026-07-02d -->
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Albion Online – Enchant Calc</title>
 <style>
 :root{
@@ -458,7 +459,7 @@ const ITEM_TYPE_KEYS = {
   'g_boots': {emoji:'🥾', n: 96},
   'g_bag':   {emoji:'🎽', n:192},
 };
-const QUALITY_KEYS = ['Normal','Good','Outstanding','Excellent','Masterpiece'];
+const APP_VERSION = '2026-07-02d';
 const QUALITY_CLASS = {
   Normal:'gm-q-normal', Good:'gm-q-good', Outstanding:'gm-q-outstanding',
   Excellent:'gm-q-excellent', Masterpiece:'gm-q-masterpiece'
@@ -1240,6 +1241,7 @@ function buildSettings(){
         <div id="import-status" style="font-size:.8rem;color:var(--muted);min-height:18px"></div>
       </div>
     </div>
+    <div style="text-align:center;font-size:.72rem;color:var(--muted);padding:8px 0 4px;opacity:.7">${state.lang==='pl'?'Wersja':'Version'}: ${APP_VERSION}</div>
   </div>`;
 }
 
