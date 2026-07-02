@@ -232,6 +232,13 @@ select.fi option{background:var(--s2)}
 .stab-k{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
 .stab-v{font-size:1rem;font-weight:700}
 .stab-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.stab-card-row{display:flex;gap:14px;align-items:center;flex-wrap:nowrap}
+.stab-card-main{flex:1;min-width:0}
+.stab-card-icon{flex-shrink:0;margin-left:auto}
+.stab-card-icon img{width:96px;height:96px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.35);padding:6px;display:block}
+.sum-head-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:0}
+.sum-head-icon{flex-shrink:0;margin-left:auto}
+.sum-head-icon img{width:88px;height:88px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.35);padding:6px;display:block}
 .stab-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .stab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 /* AWAITING TAB */
@@ -1336,8 +1343,7 @@ function buildSummaryTab(){
     const sum=calcSummary(item,mats);
     const from=+item.rangeFrom,to=+item.rangeTo;
     const tc=TIER_C[item.tier];
-    const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
-    const iconH=item.iconIsUrl?`<img src="${esc(item.icon)}" style="width:36px;height:36px;object-fit:contain" alt="" onerror="this.style.display='none'">`:esc(item.icon||ti.emoji);
+    const finalIconUrl=itemFinalIconUrl(item);
     const fee=sum&&item.sellOrder?sum.sp*(state.settings.setupFee/100)*sum.qty:0;
     const inv=sum?sum.totalMC*sum.qty+sum.bp*sum.qty+fee:0;
     const matPills=MAT_TYPES.filter(m=>sum&&sum.mc[m]>0).map(m=>{
@@ -1349,8 +1355,8 @@ function buildSummaryTab(){
       </span>`;
     }).join('');
     return`<div class="stab-card">
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="flex:1;min-width:0">
+      <div class="stab-card-row">
+        <div class="stab-card-main">
           <div class="stab-head" style="margin-bottom:8px">
             <div style="flex:1;min-width:0">
               <div style="font-weight:700;font-size:1rem;margin-bottom:3px">${esc(item.name||tType(item.type))}</div>
@@ -1373,7 +1379,7 @@ function buildSummaryTab(){
           <div style="display:flex;flex-wrap:wrap;gap:5px">${matPills||`<span style="font-size:.8rem;color:var(--muted)">${pl?'brak danych':'no data'}</span>`}</div>`
           :`<span class="sum-na">${t('fill_prices')}</span>`}
         </div>
-        ${item.iconIsUrl?`<img src="${esc(item.icon)}" style="width:80px;height:80px;object-fit:contain;flex-shrink:0;border-radius:8px;background:rgba(0,0,0,.3);padding:4px" alt="" onerror="this.style.display='none'">`:''}
+        ${finalIconUrl?`<div class="stab-card-icon"><img src="${esc(finalIconUrl)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:''}
       </div>
     </div>`;
   }).join(''):`<div class="pn" style="padding:24px;text-align:center">${t('sum_tab_empty')}</div>`;
@@ -1607,11 +1613,14 @@ function buildSummary(item,sum){
 
   return`<div class="sum-card">
     <div class="sum-head">
-      ${t('s_title')}
-      <span style="color:${tc};font-size:.95rem">${item.tier}${ENC[from]} → ${item.tier}${ENC[to]}</span>
-      <span class="sum-badge">× ${sum.qty} ${pl?'szt.':'units'}</span>
-      <span class="sum-badge">${tQ(item.quality)}</span>
-      <span class="sum-badge">${item.sellOrder?'📋 Sell Order':t('instant')}</span>
+      <div class="sum-head-main">
+        ${t('s_title')}
+        <span style="color:${tc};font-size:.95rem">${item.tier}${ENC[from]} → ${item.tier}${ENC[to]}</span>
+        <span class="sum-badge">× ${sum.qty} ${pl?'szt.':'units'}</span>
+        <span class="sum-badge">${tQ(item.quality)}</span>
+        <span class="sum-badge">${item.sellOrder?'📋 Sell Order':t('instant')}</span>
+      </div>
+      ${(()=>{const u=itemFinalIconUrl(item);return u?`<div class="sum-head-icon"><img src="${esc(u)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:'';})()}
     </div>
     <div class="sum-lines">
       <div class="sum-line">
@@ -1833,7 +1842,7 @@ function createListing(itemId){
     qty:sum?sum.qty:(parseInt(item.qty)||1),
     profit:sum?sum.profitQty:0,
     investment:sum?sum.totalMC*sum.qty+sum.bp*sum.qty+fee:0,
-    iconUrl:itemIconUrl({...item,rangeFrom:to})||( item.iconIsUrl?item.icon:null),
+    iconUrl:itemFinalIconUrl(item)||(item.iconIsUrl?item.icon:null),
     emoji:!item.iconIsUrl?(item.icon||ti.emoji):null,
   });
   // Remove from summary – item is now in "awaiting" state
@@ -2012,6 +2021,11 @@ function bindCard(el){
 function itemIconUrl(item){
   if(!item.uniqueBaseName)return null;
   const enc=(+item.rangeFrom)>0?`@${item.rangeFrom}`:'';
+  return`https://render.albiononline.com/v1/item/${encodeURIComponent(item.tier+'_'+item.uniqueBaseName+enc)}.png`;
+}
+function itemFinalIconUrl(item){
+  if(!item.uniqueBaseName)return item.iconIsUrl&&item.icon?item.icon:null;
+  const enc=(+item.rangeTo)>0?`@${item.rangeTo}`:'';
   return`https://render.albiononline.com/v1/item/${encodeURIComponent(item.tier+'_'+item.uniqueBaseName+enc)}.png`;
 }
 
