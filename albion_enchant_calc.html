@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build: 2026-07-02f -->
+<!-- build: 2026-07-02g -->
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
@@ -462,7 +462,7 @@ const ITEM_TYPE_KEYS = {
   'g_boots': {emoji:'🥾', n: 96},
   'g_bag':   {emoji:'🎽', n:192},
 };
-const APP_VERSION = '2026-07-02f';
+const APP_VERSION = '2026-07-02g';
 const QUALITY_KEYS = ['Normal','Good','Outstanding','Excellent','Masterpiece'];
 const QUALITY_CLASS = {
   Normal:'gm-q-normal', Good:'gm-q-good', Outstanding:'gm-q-outstanding',
@@ -2347,12 +2347,11 @@ function bindLoginModal(){
 }
 
 // ══════════ INIT ══════════
+try{
 setupGlobalClicks();
 load();
-
 (async()=>{
   if(cloudNick){
-    // Auto-login: try to sync from cloud
     render();
     updateNickDisplay();
     const row=await loadFromCloud(cloudNick);
@@ -2367,6 +2366,10 @@ load();
     bindLoginModal();
   }
 })();
+}catch(err){
+  console.error(err);
+  document.body.innerHTML='<div style="max-width:520px;margin:40px auto;padding:24px;background:#1a1a2e;border:2px solid #c9a84c;border-radius:12px;color:#e8e8f0;font-family:sans-serif"><h2 style="color:#ffd700;margin:0 0 12px">Błąd ładowania</h2><p style="margin:0 0 10px">Kalkulator nie mógł się uruchomić. Odśwież stronę (Ctrl+Shift+R).</p><p style="margin:0;font-size:.85rem;color:#aaa">'+String(err&&err.message||err)+'</p></div>';
+}
 
 window.addEventListener('scroll',()=>{
   const scrolled=window.scrollY>300;
