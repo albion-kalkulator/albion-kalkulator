@@ -1111,7 +1111,7 @@ function buildIconModal(){
 }
 
 // ══════════ RENDER ══════════
-function render(){buildApp();bind();}
+function render(){buildApp();bind();updateNickDisplay();}
 function refreshAllResults(){getItems().forEach(i=>refreshOne(i));save();}
 function refreshOne(item){const el=document.querySelector(`[data-results="${item.id}"]`);if(el)el.innerHTML=buildResults(item);}
 function rebuildCard(item){
