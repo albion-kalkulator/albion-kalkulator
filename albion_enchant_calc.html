@@ -1601,23 +1601,24 @@ async function saveToCloud(){
 
 function scheduleSync(){
   clearTimeout(cloudSyncTimer);
-  cloudSyncTimer=setTimeout(saveToCloud,15000);
+  cloudSyncTimer=setTimeout(saveToCloud,2000);
 }
 
 // Patch save() to also schedule cloud sync
 const _origSave=save;
 function save(){_origSave();if(cloudNick)scheduleSync();}
 
-// Save on tab close
+// Save on tab close — fetch z keepalive obsługuje nagłówki (sendBeacon nie)
 window.addEventListener('beforeunload',()=>{
   if(!cloudNick)return;
+  clearTimeout(cloudSyncTimer);
   const raw=localStorage.getItem('ao_ec_v7')||'{}';
   const payload={nick:cloudNick,data:JSON.parse(raw),updated_at:new Date().toISOString()};
-  // sendBeacon for reliable close-tab saves
-  const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
-  navigator.sendBeacon&&navigator.sendBeacon(
-    `${SB_URL}/rest/v1/${SB_TABLE}?apikey=${SB_KEY}`,blob
-  );
+  try{fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
+    method:'POST',keepalive:true,
+    headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify(payload)
+  });}catch{}
 });
 
 // ── LOGIN MODAL ──
