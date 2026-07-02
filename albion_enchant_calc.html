@@ -455,6 +455,14 @@ function tMatFull(tier,m){
 function getMats(){return state.materialsByCity[state.activeCity];}
 function getItems(){return state.itemsByCity[state.activeCity];}
 function setItem(id,fn){const a=state.itemsByCity[state.activeCity];const i=a.findIndex(x=>x.id===id);if(i>=0)fn(a[i]);}
+function getListingCity(l){
+  if(l.city)return l.city;
+  for(const c of CITY_LIST){
+    if((state.itemsByCity[c]||[]).some(i=>i.id===l.itemId))return c;
+  }
+  return null;
+}
+function getCityListings(city){return state.listings.filter(l=>getListingCity(l)===city);}
 
 function newItem(){
   return {
@@ -576,7 +584,7 @@ function buildCityPanel(){
 }
 
 function buildTabs(){
-  const awCount=state.listings.length;
+  const awCount=getCityListings(state.activeCity).length;
   const tabs=[
     {id:'items',l:t('tab_items')},
     {id:'materials',l:t('tab_mats')},
@@ -810,7 +818,7 @@ function buildAwaitingTab(){
   const city=state.activeCity;
   const cityData=CITIES[city];
   const sh=state.salesHistory;
-  const shCity=sh.filter(s=>!s.city||s.city===city);
+  const shCity=sh.filter(s=>s.city===city);
   // Global stats
   const pToday=sh.filter(s=>now-s.soldAt<day).reduce((a,s)=>a+s.profit,0);
   const pWeek =sh.filter(s=>now-s.soldAt<week).reduce((a,s)=>a+s.profit,0);
@@ -833,7 +841,10 @@ function buildAwaitingTab(){
       <div class="stats-kv"><div class="stats-k">${t('stats_month')}</div><div class="stats-v">${fp(pMonth)} 💰</div></div>
       <div class="stats-kv"><div class="stats-k">${t('stats_all')}</div><div class="stats-v">${fp(pAll)} 💰</div></div>
     </div>
-    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cityData?.color||'var(--muted)'};margin-bottom:6px">${cityData?.icon||''} ${city}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cityData?.color||'var(--muted)'}">${cityData?.icon||''} ${city}</div>
+      <button class="btn-rm" id="btn-clear-city-stats" style="font-size:.72rem;padding:3px 9px">${pl?'🗑️ Wyczyść miasto':'🗑️ Clear city'}</button>
+    </div>
     <div class="stats-grid">
       <div class="stats-kv"><div class="stats-k">${t('stats_today')}</div><div class="stats-v">${fp(cpToday)} 💰</div></div>
       <div class="stats-kv"><div class="stats-k">${t('stats_week')}</div><div class="stats-v">${fp(cpWeek)} 💰</div></div>
@@ -841,7 +852,7 @@ function buildAwaitingTab(){
       <div class="stats-kv"><div class="stats-k">${t('stats_all')}</div><div class="stats-v">${fp(cpAll)} 💰</div></div>
     </div>
   </div>`;
-  const listings=state.listings.filter(l=>!l.city||l.city===city);
+  const listings=getCityListings(city);
   const totValH=listings.length?`<div class="stab-total">
     <div class="stab-kv"><div class="stab-k">${t('await_total_value')}</div><div class="stab-v">${f(listings.reduce((a,l)=>a+l.sp*l.qty,0))} 💰</div></div>
     <div class="stab-kv"><div class="stab-k">${t('await_total_profit')}</div><div class="stab-v ${listings.reduce((a,l)=>a+l.profit,0)>=0?'pg':'pb'}">${fp(listings.reduce((a,l)=>a+l.profit,0))} 💰</div></div>
@@ -1089,7 +1100,7 @@ function buildSummary(item,sum){
         </span>`;
       })():''}
       ${(()=>{
-        const listings=state.listings.filter(l=>l.itemId===item.id&&(!l.city||l.city===state.activeCity));
+        const listings=state.listings.filter(l=>l.itemId===item.id&&getListingCity(l)===state.activeCity);
         if(!listings.length)return'';
         const pl=state.lang==='pl';
         const now=Date.now();
@@ -1322,11 +1333,14 @@ function bind(){
     const[tier,m]=el.dataset.mat.split('-');
     if(!state.materialsByCity[state.activeCity])state.materialsByCity[state.activeCity]=emptyMats();
     state.materialsByCity[state.activeCity][tier][m]=el.value;
+    save();
     refreshAllResults();
   }));
   // Settings
   qsa('[data-sett]').forEach(el=>el.addEventListener('input',()=>{
-    state.settings[el.dataset.sett]=parseFloat(el.value)||0;refreshAllResults();
+    state.settings[el.dataset.sett]=parseFloat(el.value)||0;
+    save();
+    refreshAllResults();
   }));
   // Add item
   on('btn-add','click',()=>{
@@ -1393,6 +1407,17 @@ function bind(){
       ?'Czy na pewno chcesz wyczyścić całą historię sprzedaży? Tej operacji nie można cofnąć.'
       :'Are you sure you want to clear all sales history? This cannot be undone.';
     if(confirm(msg)){state.salesHistory=[];save();render();}
+  });
+  on('btn-clear-city-stats','click',()=>{
+    const pl=state.lang==='pl';
+    const city=state.activeCity;
+    const msg=pl
+      ?`Czy na pewno chcesz wyczyścić statystyki sprzedaży dla miasta ${city}? Ogólne statystyki pozostaną.`
+      :`Are you sure you want to clear sales stats for ${city}? Overall stats will remain.`;
+    if(confirm(msg)){
+      state.salesHistory=state.salesHistory.filter(s=>s.city&&s.city!==city);
+      save();render();
+    }
   });
   // Export / Import
   on('btn-export-data','click',()=>exportData());
@@ -1715,11 +1740,16 @@ load();
       const localRaw=localStorage.getItem('ao_ec_v7');
       const localTime=localRaw?JSON.parse(localRaw)?.updated_at_ts||0:0;
       const cloudTime=new Date(row.updated_at).getTime();
-      if(cloudTime>localTime){
-        // Cloud is newer — reload
+      const dataTime=row.data?.updated_at_ts||0;
+      const bestCloudTime=Math.max(cloudTime,dataTime);
+      if(bestCloudTime>localTime){
         localStorage.setItem('ao_ec_v7',JSON.stringify(row.data));
         load();render();
+      } else if(localTime>bestCloudTime){
+        await saveToCloud();
       }
+    } else {
+      await saveToCloud();
     }
     setSyncStatus('ok');
   } else {
