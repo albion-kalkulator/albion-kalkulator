@@ -106,10 +106,8 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--t
 .add-btn:hover{border-color:var(--gold-d);color:var(--gold)}
 .item-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .item-top{background:var(--s2);padding:14px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.item-icon{width:90px;height:90px;background:var(--bg);border:2px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2.4rem;overflow:hidden;cursor:pointer;flex-shrink:0;position:relative;transition:border-color .2s}
-.item-icon:hover{border-color:var(--gold)}
+.item-icon{width:90px;height:90px;background:var(--bg);border:2px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2.4rem;overflow:hidden;flex-shrink:0;position:relative}
 .item-icon img{width:100%;height:100%;object-fit:contain}
-.icon-hint{position:absolute;bottom:0;right:0;font-size:.58rem;background:rgba(0,0,0,.7);color:var(--gold);padding:2px 4px;border-radius:4px 0 0 0}
 .item-fields{display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap;flex:1}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
@@ -196,21 +194,6 @@ select.fi option{background:var(--s2)}
 #btn-top:hover,#btn-bot:hover{border-color:var(--gold)}
 #btn-top:hover{transform:scale(1.1) translateY(-2px)}
 #btn-bot:hover{transform:scale(1.1) translateY(2px)}
-/* MODAL */
-.mbg{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:999}
-.mbox{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;width:92%;max-width:420px}
-.mbox h3{color:var(--gold);margin-bottom:6px;font-size:.95rem}
-.msub{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.55}
-.minp{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 12px;font-size:.9rem;margin-bottom:12px}
-.minp:focus{outline:none;border-color:var(--gold)}
-.mprev{min-height:56px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;background:var(--s2);border-radius:9px;margin-bottom:12px}
-.mprev img{height:56px;width:56px;object-fit:contain}
-.mbtns{display:flex;gap:8px;justify-content:flex-end}
-.bcnl{padding:8px 16px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;cursor:pointer;font-size:.85rem;transition:all .2s}
-.bcnl:hover{border-color:var(--text);color:var(--text)}
-.bok{padding:8px 18px;background:linear-gradient(135deg,var(--gold),var(--gold-d));border:none;color:#1a0900;border-radius:7px;cursor:pointer;font-size:.85rem;font-weight:700}
-.bok:hover{background:linear-gradient(135deg,var(--gold-l),var(--gold))}
-
 @media(max-width:1200px){.mat-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px){.mat-grid{grid-template-columns:1fr}}
 /* SEARCH AUTOCOMPLETE */
@@ -607,7 +590,6 @@ let state = {
   materialsByCity: Object.fromEntries(CITY_LIST.map(c=>[c,emptyMats()])),
   itemsByCity:     Object.fromEntries(CITY_LIST.map(c=>[c,[]])),
   settings:{taxNoPrem:8, taxPrem:4, setupFee:2.5},
-  iconModal:null,
   listings: [],       // active market listings
   salesHistory: [],   // completed sales for stats
   sort: {key:'none', dir:'asc'},
@@ -1093,8 +1075,7 @@ function buildApp(){
   const calcHtml=buildMaterials()+buildSettings()+buildItems()+buildSummaryTab()+buildAwaitingTab();
   document.getElementById('app').innerHTML=
     '<div id="sticky-top">'+buildHeader()+(state.mainSection==='calc'?buildTabs():'')+'</div>'+
-    '<div id="tc">'+(state.mainSection==='calc'?calcHtml:buildGuildMarketTab())+'</div>'+
-    buildIconModal();
+    '<div id="tc">'+(state.mainSection==='calc'?calcHtml:buildGuildMarketTab())+'</div>';
 }
 
 function buildMainNav(){
@@ -1480,7 +1461,7 @@ function buildItemCard(item){
   const tc=TIER_C[item.tier];
   return`<div class="item-card" data-item="${item.id}">
     <div class="item-top">
-      <div class="item-icon" data-iconclick="${item.id}">${iconH}<span class="icon-hint">✎</span></div>
+      <div class="item-icon">${iconH}</div>
       <div class="item-fields">
         <div class="fg"><div class="fl">${t('lbl_name')}</div>
           <div class="search-wrap">
@@ -1687,27 +1668,6 @@ function buildSummary(item,sum){
           </span>`;
         }).join('');
       })()}
-    </div>
-  </div>`;
-}
-
-function buildIconModal(){
-  if(!state.iconModal)return'';
-  const item=getItems().find(i=>i.id===state.iconModal);
-  const val=item?item.icon:'';
-  const prev=val?(val.startsWith('http')?`<img src="${esc(val)}" onerror="this.style.display='none'">`:esc(val)):'?';
-  return`<div class="mbg" id="mbg">
-    <div class="mbox">
-      <h3>🖼️ ${state.lang==='pl'?'Ikona itemu':'Item icon'}</h3>
-      <p class="msub">${state.lang==='pl'?'Wpisz emoji lub URL z Albion CDN:':'Enter emoji or Albion CDN URL:'}<br>
-        <code>https://render.albiononline.com/v1/item/ITEM_ID</code><br>
-        ${state.lang==='pl'?'Np.':'E.g.'}: <code>T4_2H_CLAYMORE</code>, <code>T5_SWORD</code></p>
-      <input type="text" class="minp" id="m-inp" placeholder="⚔️ or https://…" value="${esc(val)}">
-      <div class="mprev" id="m-prev">${prev}</div>
-      <div class="mbtns">
-        <button class="bcnl" id="m-cancel">${state.lang==='pl'?'Anuluj':'Cancel'}</button>
-        <button class="bok"  id="m-ok">${state.lang==='pl'?'Zapisz':'Save'}</button>
-      </div>
     </div>
   </div>`;
 }
@@ -1944,25 +1904,11 @@ function bind(){
     state.itemsByCity[state.activeCity]=state.itemsByCity[state.activeCity].filter(i=>i.id!==+el.dataset.rm);
     render();
   }));
-  // Icon
-  qsa('[data-iconclick]').forEach(el=>on(el,'click',()=>{state.iconModal=+el.dataset.iconclick;render();}));
-  // Modal
-  const mi=document.getElementById('m-inp');
-  if(mi){
-    mi.focus();
-    mi.addEventListener('input',()=>{
-      const v=mi.value.trim(),p=document.getElementById('m-prev');
-      if(p)p.innerHTML=v?(v.startsWith('http')?`<img src="${esc(v)}" onerror="this.style.display='none'">`:esc(v)):'?';
-    });
-  }
-  on('m-cancel','click',()=>{state.iconModal=null;render();});
-  on('m-ok','click',()=>{
-    if(mi&&state.iconModal){const v=mi.value.trim();
-      setItem(state.iconModal,item=>{item.icon=v||(ITEM_TYPE_KEYS[item.type]||{}).emoji||'📦';item.iconIsUrl=v.startsWith('http://') || v.startsWith('https://');});}
-    state.iconModal=null;render();
-  });
-  on('mbg','click',e=>{if(e.target.id==='mbg'){state.iconModal=null;render();}});
-  // Clear stats button (rendered inside #tc, bind after render)
+  qsa('[data-fav]').forEach(btn=>on(btn,'click',()=>{
+    const id=+btn.dataset.fav;
+    setItem(id,it=>{it.favorite=!it.favorite;});
+    save();render();
+  }));
   on('btn-clear-stats','click',()=>{
     const pl=state.lang==='pl';
     const msg=pl
@@ -2014,7 +1960,6 @@ function bindCard(el){
   el.querySelectorAll('[data-rm]').forEach(btn=>on(btn,'click',()=>{
     state.itemsByCity[state.activeCity]=state.itemsByCity[state.activeCity].filter(i=>i.id!==+btn.dataset.rm);render();
   }));
-  el.querySelectorAll('[data-iconclick]').forEach(ic=>on(ic,'click',()=>{state.iconModal=+ic.dataset.iconclick;render();}));
   bindSearchInputs(el);
 }
 
