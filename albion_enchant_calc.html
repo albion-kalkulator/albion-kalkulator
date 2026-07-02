@@ -1340,15 +1340,19 @@ function bind(){
     else{const p=document.getElementById('city-panel');if(p)p.classList.remove('open');}
   }));
   // Materials
-  qsa('[data-mat]').forEach(el=>el.addEventListener('input',()=>{
-    const[tier,m]=parseMatKey(el.dataset.mat);
-    if(!tier||!m)return;
-    if(!state.materialsByCity[state.activeCity])state.materialsByCity[state.activeCity]=emptyMats();
-    if(!state.materialsByCity[state.activeCity][tier])state.materialsByCity[state.activeCity][tier]={rune:'',soul:'',relic:''};
-    state.materialsByCity[state.activeCity][tier][m]=el.value;
-    save();
-    refreshAllResults();
-  }));
+  qsa('[data-mat]').forEach(el=>{
+    const onMat=()=>{
+      const[tier,m]=parseMatKey(el.dataset.mat);
+      if(!tier||!m)return;
+      if(!state.materialsByCity[state.activeCity])state.materialsByCity[state.activeCity]=emptyMats();
+      if(!state.materialsByCity[state.activeCity][tier])state.materialsByCity[state.activeCity][tier]={rune:'',soul:'',relic:''};
+      state.materialsByCity[state.activeCity][tier][m]=el.value;
+      save();
+      refreshAllResults();
+    };
+    el.addEventListener('input',onMat);
+    el.addEventListener('change',onMat);
+  });
   // Settings
   qsa('[data-sett]').forEach(el=>el.addEventListener('input',()=>{
     state.settings[el.dataset.sett]=parseFloat(el.value)||0;
@@ -1388,31 +1392,6 @@ function bind(){
     state.iconModal=null;render();
   });
   on('mbg','click',e=>{if(e.target.id==='mbg'){state.iconModal=null;render();}});
-  // Delegated: togglesum, tomarket, sold buttons
-  document.getElementById('tc').addEventListener('click',e=>{
-    const ts=e.target.closest('[data-togglesum]');
-    if(ts){const id=+ts.dataset.togglesum;setItem(id,it=>{it.inSummary=!it.inSummary;});
-      ts.classList.toggle('on');ts.textContent=ts.classList.contains('on')?t('btn_in_sum'):t('btn_add_sum');
-      // show/hide the market button without full rebuild
-      const actRow=ts.closest('.sum-act-row');
-      if(actRow){
-        let mb=actRow.querySelector('.btn-to-market');
-        const item=getItems().find(i=>i.id===id);
-        if(item&&item.inSummary&&!mb){mb=document.createElement('button');mb.className='btn-to-market';mb.dataset.tomarket=id;mb.textContent='🏪 '+t('btn_to_market');actRow.appendChild(mb);}
-        else if(!item?.inSummary&&mb)mb.remove();
-      }
-      save();return;}
-    const tm=e.target.closest('[data-tomarket]');
-    if(tm){createListing(+tm.dataset.tomarket);return;}
-    const sold=e.target.closest('[data-sold]');
-    if(sold){soldListing(sold.dataset.sold);return;}
-    // Remove from summary tab (uncheck inSummary)
-    const rs=e.target.closest('[data-rmsum]');
-    if(rs){const id=+rs.dataset.rmsum;setItem(id,it=>{it.inSummary=false;});save();render();return;}
-    // Remove listing from awaiting tab (cancel listing)
-    const rl=e.target.closest('[data-rmlisting]');
-    if(rl){state.listings=state.listings.filter(x=>!listingIdMatch(x.id,+rl.dataset.rmlisting));save();render();return;}
-  });
   // Clear stats button (rendered inside #tc, bind after render)
   on('btn-clear-stats','click',()=>{
     const pl=state.lang==='pl';
@@ -1523,7 +1502,7 @@ const qsa=s=>document.querySelectorAll(s);
 function on(e,ev,fn){const el=typeof e==='string'?document.getElementById(e):e;if(el)el.addEventListener(ev,fn);}
 
 // ══════════ PERSIST ══════════
-function save(){
+function persistState(){
   try{localStorage.setItem('ao_ec_v7',JSON.stringify({
     lang:state.lang,premium:state.premium,activeCity:state.activeCity,activeTab:state.activeTab,
     materialsByCity:state.materialsByCity,settings:state.settings,itemsByCity:state.itemsByCity,nextId,
@@ -1532,6 +1511,7 @@ function save(){
     updated_at_ts:Date.now()
   }));}catch(_){}
 }
+function save(){persistState();if(cloudNick)scheduleSync();}
 function load(){
   try{
     const raw=localStorage.getItem('ao_ec_v7')||localStorage.getItem('ao_ec_v6')||'null';
@@ -1635,7 +1615,7 @@ async function saveToCloud(){
   if(!cloudNick)return;
   setSyncStatus('syncing');
   try{
-    save();
+    persistState();
     const data=JSON.parse(localStorage.getItem('ao_ec_v7')||'{}');
     const payload={nick:cloudNick,data,updated_at:new Date().toISOString()};
     const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
@@ -1643,8 +1623,13 @@ async function saveToCloud(){
       headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify(payload)
     });
-    setSyncStatus(r.ok?'ok':'error');
-  }catch{setSyncStatus('error');}
+    if(!r.ok){
+      const err=await r.text().catch(()=>'');
+      setSyncStatus('error',err.slice(0,40)||r.status);
+      return;
+    }
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('error',String(e.message||e).slice(0,40));}
 }
 
 function applyCloudData(cloudData){
@@ -1663,22 +1648,47 @@ function scheduleSync(){
   cloudSyncTimer=setTimeout(saveToCloud,2000);
 }
 
-// Patch save() to also schedule cloud sync
-const _origSave=save;
-function save(){_origSave();if(cloudNick)scheduleSync();}
-
-// Save on tab close — fetch z keepalive obsługuje nagłówki (sendBeacon nie)
+// Save on tab close
 window.addEventListener('beforeunload',()=>{
   if(!cloudNick)return;
   clearTimeout(cloudSyncTimer);
-  const raw=localStorage.getItem('ao_ec_v7')||'{}';
-  const payload={nick:cloudNick,data:JSON.parse(raw),updated_at:new Date().toISOString()};
+  persistState();
+  const data=JSON.parse(localStorage.getItem('ao_ec_v7')||'{}');
+  const payload={nick:cloudNick,data,updated_at:new Date().toISOString()};
   try{fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
     method:'POST',keepalive:true,
     headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify(payload)
   });}catch{}
 });
+
+// Global click delegation (once) — sold/remove/togglesum etc.
+function setupGlobalClicks(){
+  if(setupGlobalClicks.done)return;
+  setupGlobalClicks.done=true;
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('#tc'))return;
+    const ts=e.target.closest('[data-togglesum]');
+    if(ts){const id=+ts.dataset.togglesum;setItem(id,it=>{it.inSummary=!it.inSummary;});
+      ts.classList.toggle('on');ts.textContent=ts.classList.contains('on')?t('btn_in_sum'):t('btn_add_sum');
+      const actRow=ts.closest('.sum-act-row');
+      if(actRow){
+        let mb=actRow.querySelector('.btn-to-market');
+        const item=getItems().find(i=>i.id===id);
+        if(item&&item.inSummary&&!mb){mb=document.createElement('button');mb.className='btn-to-market';mb.dataset.tomarket=id;mb.textContent='🏪 '+t('btn_to_market');actRow.appendChild(mb);}
+        else if(!item?.inSummary&&mb)mb.remove();
+      }
+      save();return;}
+    const tm=e.target.closest('[data-tomarket]');
+    if(tm){createListing(+tm.dataset.tomarket);return;}
+    const sold=e.target.closest('[data-sold]');
+    if(sold){soldListing(sold.dataset.sold);return;}
+    const rs=e.target.closest('[data-rmsum]');
+    if(rs){const id=+rs.dataset.rmsum;setItem(id,it=>{it.inSummary=false;});save();render();return;}
+    const rl=e.target.closest('[data-rmlisting]');
+    if(rl){state.listings=state.listings.filter(x=>!listingIdMatch(x.id,rl.dataset.rmlisting));save();render();return;}
+  });
+}
 
 // ── LOGIN MODAL ──
 function buildLoginModal(){
@@ -1708,23 +1718,18 @@ async function doLogin(nick){
 
   const row=await loadFromCloud(nick);
   if(row&&row.data){
-    // Nick istnieje w chmurze — załaduj jego dane
-    localStorage.setItem('ao_ec_v7',JSON.stringify(row.data));
+    applyCloudData(row.data);
   } else {
-    // Nowy nick — czyste dane (nie bierz localStorage od poprzedniego usera)
     localStorage.removeItem('ao_ec_v7');
   }
   load();
-  // Save nick locally
   localStorage.setItem('ao_nick',nick);
   cloudNick=nick;
-
-  // Remove login overlay and render
   const ov=document.getElementById('login-overlay');
   if(ov)ov.remove();
   render();
   updateNickDisplay();
-  setSyncStatus('ok');
+  await saveToCloud();
 }
 
 function updateNickDisplay(){
@@ -1762,6 +1767,7 @@ function bindLoginModal(){
 }
 
 // ══════════ INIT ══════════
+setupGlobalClicks();
 load();
 
 (async()=>{
@@ -1772,20 +1778,21 @@ load();
     const row=await loadFromCloud(cloudNick);
     if(row&&row.data){
       const localRaw=localStorage.getItem('ao_ec_v7');
-      const localTime=localRaw?JSON.parse(localRaw)?.updated_at_ts||0:0;
+      const local=localRaw?JSON.parse(localRaw):{};
+      let localTime=local.updated_at_ts||0;
+      if(!localTime&&local.materialsByCity)localTime=Date.now();
       const cloudTime=new Date(row.updated_at).getTime();
       const dataTime=row.data?.updated_at_ts||0;
       const bestCloudTime=Math.max(cloudTime,dataTime);
       if(bestCloudTime>localTime){
         applyCloudData(row.data);
         load();render();
-      } else if(localTime>bestCloudTime){
+      } else {
         await saveToCloud();
       }
     } else {
       await saveToCloud();
     }
-    setSyncStatus('ok');
   } else {
     render();
     document.body.insertAdjacentHTML('beforeend',buildLoginModal());
