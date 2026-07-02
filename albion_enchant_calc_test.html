@@ -264,12 +264,18 @@ select.fi option{background:var(--s2)}
 .gm-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
 .gm-icon-wrap{flex-shrink:0;border-radius:12px;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden}
 .gm-icon-wrap.gm-icon-quality{border-style:solid;padding:6px}
+.gm-icon-wrap.gm-q-normal{border-color:#7a7a7a}
+.gm-icon-wrap.gm-q-good{border-color:#6a8fa8;box-shadow:0 0 0 1px rgba(106,143,168,.35),0 0 8px rgba(106,143,168,.28)}
+.gm-icon-wrap.gm-q-outstanding{border-color:#c9782a;box-shadow:0 0 0 1px rgba(201,120,42,.35),0 0 10px rgba(201,120,42,.35)}
+.gm-icon-wrap.gm-q-excellent{border-color:#ffffff;box-shadow:0 0 0 1px rgba(255,255,255,.45),0 0 12px rgba(255,255,255,.35)}
+.gm-icon-wrap.gm-q-masterpiece{border-color:#ffd700;box-shadow:0 0 0 1px rgba(255,215,0,.5),0 0 14px rgba(255,215,0,.55)}
 .gm-icon-wrap.gm-icon-plain{border:none;padding:4px}
 .gm-icon-wrap img{width:100%;height:100%;object-fit:contain;display:block}
 .gm-icon-lg{width:104px;height:104px}
 .gm-icon-lg.gm-icon-quality{border-width:4px}
-.gm-icon-preview{width:80px;height:80px;margin-top:6px}
-.gm-icon-preview.gm-icon-quality{border-width:3px}
+.gm-icon-preview{width:120px;height:120px;margin-top:10px}
+.gm-icon-preview.gm-icon-quality{border-width:4px}
+.gm-preview-wrap{margin-top:8px}
 .gm-body{flex:1;min-width:200px}
 .gm-title{font-weight:700;font-size:1rem;margin-bottom:4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .gm-meta{font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
@@ -284,7 +290,7 @@ select.fi option{background:var(--s2)}
 .gm-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:12px}
 .gm-status{font-size:.82rem;color:var(--muted);min-height:18px;margin-bottom:8px}
 #gm-sdd .sdd-item{padding:10px 14px;gap:14px}
-#gm-sdd .sdd-item img{width:56px;height:56px;border-radius:6px}
+#gm-sdd .sdd-item img{width:80px;height:80px;border-radius:8px}
 #gm-sdd .sdd-name{font-size:.92rem}
 </style>
 </head>
@@ -448,9 +454,9 @@ const ITEM_TYPE_KEYS = {
   'g_bag':   {emoji:'🎽', n:192},
 };
 const QUALITY_KEYS = ['Normal','Good','Outstanding','Excellent','Masterpiece'];
-const QUALITY_BORDER = {
-  Normal:'#888888', Good:'#7a9aaa', Outstanding:'#c4a574',
-  Excellent:'#e8e8e8', Masterpiece:'#c9a84c'
+const QUALITY_CLASS = {
+  Normal:'gm-q-normal', Good:'gm-q-good', Outstanding:'gm-q-outstanding',
+  Excellent:'gm-q-excellent', Masterpiece:'gm-q-masterpiece'
 };
 const TIERS = ['T4','T5','T6','T7','T8'];
 // Tier colors: T4=blue, T5=red, T6=orange, T7=yellow, T8=white
@@ -643,8 +649,8 @@ function buildGuildIconHtml(entry,sizeClass){
   const hasQ=itemHasQuality(entry.unique_base_name,entry.tier);
   const inner=iconUrl?`<img src="${esc(iconUrl)}" alt="" onerror="this.parentElement.textContent='📦'">`:'<span style="font-size:2.4rem;line-height:1">📦</span>';
   if(!hasQ)return `<div class="gm-icon-wrap gm-icon-plain ${sizeClass}">${inner}</div>`;
-  const qBorder=QUALITY_BORDER[entry.quality]||QUALITY_BORDER.Normal;
-  return `<div class="gm-icon-wrap gm-icon-quality ${sizeClass}" style="border-color:${qBorder}">${inner}</div>`;
+  const qClass=QUALITY_CLASS[entry.quality]||QUALITY_CLASS.Normal;
+  return `<div class="gm-icon-wrap gm-icon-quality ${qClass} ${sizeClass}">${inner}</div>`;
 }
 function guildCityInfo(city){return GM_CITIES[city]||null;}
 function fmtGuildDate(iso){
@@ -774,7 +780,7 @@ function buildGuildMarketTab(){
           value="${esc(gf.item_name)}" placeholder="${t('search_placeholder')}" autocomplete="off">
         <div class="search-dd" id="gm-sdd" style="display:none;min-width:340px"></div>
       </div>
-      ${previewHtml}
+      ${previewHtml?`<div class="gm-preview-wrap">${previewHtml}</div>`:''}
     </div>
     <div class="fg" style="margin-bottom:12px"><div class="fl">${t('gm_note')}</div>
       <input type="text" class="fi" id="gm-note" style="width:100%;max-width:520px" value="${esc(gf.note)}" placeholder="">
@@ -974,6 +980,16 @@ function bindGuildMarket(){
   if(tierEl)tierEl.addEventListener('change',()=>{
     guildForm.tier=tierEl.value;
     if(guildForm.unique_base_name&&!itemHasQuality(guildForm.unique_base_name,guildForm.tier))guildForm.enchant=0;
+    render();
+  });
+  const qualEl=document.getElementById('gm-quality');
+  if(qualEl)qualEl.addEventListener('change',()=>{
+    guildForm.quality=qualEl.value;
+    render();
+  });
+  const encEl=document.getElementById('gm-enchant');
+  if(encEl)encEl.addEventListener('change',()=>{
+    guildForm.enchant=+encEl.value||0;
     render();
   });
 }
