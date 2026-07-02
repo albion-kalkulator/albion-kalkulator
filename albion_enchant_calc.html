@@ -807,24 +807,41 @@ function buildAwaitingTab(){
   const pl=state.lang==='pl';
   const active=state.activeTab==='awaiting';
   const now=Date.now(),day=86400000,week=7*day,month=30*day;
+  const city=state.activeCity;
+  const cityData=CITIES[city];
   const sh=state.salesHistory;
+  const shCity=sh.filter(s=>!s.city||s.city===city);
+  // Global stats
   const pToday=sh.filter(s=>now-s.soldAt<day).reduce((a,s)=>a+s.profit,0);
   const pWeek =sh.filter(s=>now-s.soldAt<week).reduce((a,s)=>a+s.profit,0);
   const pMonth=sh.filter(s=>now-s.soldAt<month).reduce((a,s)=>a+s.profit,0);
   const pAll  =sh.reduce((a,s)=>a+s.profit,0);
+  // City stats
+  const cpToday=shCity.filter(s=>now-s.soldAt<day).reduce((a,s)=>a+s.profit,0);
+  const cpWeek =shCity.filter(s=>now-s.soldAt<week).reduce((a,s)=>a+s.profit,0);
+  const cpMonth=shCity.filter(s=>now-s.soldAt<month).reduce((a,s)=>a+s.profit,0);
+  const cpAll  =shCity.reduce((a,s)=>a+s.profit,0);
   const statsHtml=`<div class="stats-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="stats-head" style="margin-bottom:0">${t('stats_title')}</div>
       <button class="btn-rm" id="btn-clear-stats" style="font-size:.78rem;padding:4px 10px">${pl?'🗑️ Wyczyść statystyki':'🗑️ Clear stats'}</button>
     </div>
-    <div class="stats-grid">
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px">${pl?'🌍 Ogólnie':'🌍 Overall'}</div>
+    <div class="stats-grid" style="margin-bottom:12px">
       <div class="stats-kv"><div class="stats-k">${t('stats_today')}</div><div class="stats-v">${fp(pToday)} 💰</div></div>
       <div class="stats-kv"><div class="stats-k">${t('stats_week')}</div><div class="stats-v">${fp(pWeek)} 💰</div></div>
       <div class="stats-kv"><div class="stats-k">${t('stats_month')}</div><div class="stats-v">${fp(pMonth)} 💰</div></div>
       <div class="stats-kv"><div class="stats-k">${t('stats_all')}</div><div class="stats-v">${fp(pAll)} 💰</div></div>
     </div>
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${cityData?.color||'var(--muted)'};margin-bottom:6px">${cityData?.icon||''} ${city}</div>
+    <div class="stats-grid">
+      <div class="stats-kv"><div class="stats-k">${t('stats_today')}</div><div class="stats-v">${fp(cpToday)} 💰</div></div>
+      <div class="stats-kv"><div class="stats-k">${t('stats_week')}</div><div class="stats-v">${fp(cpWeek)} 💰</div></div>
+      <div class="stats-kv"><div class="stats-k">${t('stats_month')}</div><div class="stats-v">${fp(cpMonth)} 💰</div></div>
+      <div class="stats-kv"><div class="stats-k">${t('stats_all')}</div><div class="stats-v">${fp(cpAll)} 💰</div></div>
+    </div>
   </div>`;
-  const listings=state.listings;
+  const listings=state.listings.filter(l=>!l.city||l.city===city);
   const totValH=listings.length?`<div class="stab-total">
     <div class="stab-kv"><div class="stab-k">${t('await_total_value')}</div><div class="stab-v">${f(listings.reduce((a,l)=>a+l.sp*l.qty,0))} 💰</div></div>
     <div class="stab-kv"><div class="stab-k">${t('await_total_profit')}</div><div class="stab-v ${listings.reduce((a,l)=>a+l.profit,0)>=0?'pg':'pb'}">${fp(listings.reduce((a,l)=>a+l.profit,0))} 💰</div></div>
@@ -1246,7 +1263,7 @@ function createListing(itemId){
 
 function soldListing(lid){
   const l=state.listings.find(x=>x.id===lid);if(!l)return;
-  state.salesHistory.push({id:lid,soldAt:Date.now(),listedAt:l.listedAt,name:l.name,tier:l.tier,enc:l.enc,profit:l.profit,qty:l.qty});
+  state.salesHistory.push({id:lid,soldAt:Date.now(),listedAt:l.listedAt,name:l.name,tier:l.tier,enc:l.enc,profit:l.profit,qty:l.qty,city:l.city||null});
   state.listings=state.listings.filter(x=>x.id!==lid);
   // uncheck inSummary on the source item
   setItem(l.itemId,it=>{it.inSummary=false;});
@@ -1472,7 +1489,8 @@ function save(){
   try{localStorage.setItem('ao_ec_v7',JSON.stringify({
     lang:state.lang,premium:state.premium,activeCity:state.activeCity,activeTab:state.activeTab,
     materialsByCity:state.materialsByCity,settings:state.settings,itemsByCity:state.itemsByCity,nextId,
-    listings:state.listings,salesHistory:state.salesHistory,sort:state.sort
+    listings:state.listings,salesHistory:state.salesHistory,sort:state.sort,
+    updated_at_ts:Date.now()
   }));}catch(_){}
 }
 function load(){
