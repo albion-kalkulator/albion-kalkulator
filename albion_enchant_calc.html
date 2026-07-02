@@ -1620,10 +1620,13 @@ async function doLogin(nick){
 
   const row=await loadFromCloud(nick);
   if(row&&row.data){
-    // Load cloud data
+    // Nick istnieje w chmurze — załaduj jego dane
     localStorage.setItem('ao_ec_v7',JSON.stringify(row.data));
-    load();
+  } else {
+    // Nowy nick — czyste dane (nie bierz localStorage od poprzedniego usera)
+    localStorage.removeItem('ao_ec_v7');
   }
+  load();
   // Save nick locally
   localStorage.setItem('ao_nick',nick);
   cloudNick=nick;
