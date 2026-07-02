@@ -639,6 +639,26 @@ function buildSettings(){
         `).join('')}
       </div>
     </div>
+    <div class="scard" style="max-width:460px">
+      <div class="scard-ttl">💾 ${state.lang==='pl'?'Dane – eksport / import':'Data – export / import'}</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:4px">
+          ${state.lang==='pl'
+            ?'Eksportuj swoje dane do pliku JSON. Importuj na innym urządzeniu lub w wersji online.'
+            :'Export your data to a JSON file. Import on another device or the online version.'}
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button id="btn-export-data" style="padding:10px 20px;background:var(--s2);border:1.5px solid var(--border);color:var(--text);border-radius:9px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s">
+            📥 ${state.lang==='pl'?'Eksportuj dane':'Export data'}
+          </button>
+          <label id="btn-import-data" style="padding:10px 20px;background:var(--s2);border:1.5px solid var(--gold-d);color:var(--gold-l);border-radius:9px;cursor:pointer;font-size:.9rem;font-weight:600;transition:all .2s">
+            📤 ${state.lang==='pl'?'Importuj dane':'Import data'}
+            <input type="file" accept=".json" id="import-file-input" style="display:none">
+          </label>
+        </div>
+        <div id="import-status" style="font-size:.8rem;color:var(--muted);min-height:18px"></div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -1347,6 +1367,13 @@ function bind(){
       :'Are you sure you want to clear all sales history? This cannot be undone.';
     if(confirm(msg)){state.salesHistory=[];save();render();}
   });
+  // Export / Import
+  on('btn-export-data','click',()=>exportData());
+  const fileInp=document.getElementById('import-file-input');
+  if(fileInp)fileInp.addEventListener('change',e=>{
+    if(e.target.files[0])importData(e.target.files[0]);
+    e.target.value='';
+  });
   // Search input binding for items tab
   bindSearchInputs(document);
 }
@@ -1459,6 +1486,42 @@ function load(){
     });
     nextId=d.nextId??(1+Math.max(0,...CITY_LIST.flatMap(c=>(state.itemsByCity[c]||[]).map(i=>i.id||0))));
   }catch(_){}
+}
+
+// ══════════ EXPORT / IMPORT ══════════
+function exportData(){
+  const raw=localStorage.getItem('ao_ec_v7')||'{}';
+  const nick=cloudNick||'dane';
+  const blob=new Blob([raw],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`albion_kalkulator_${nick}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(file){
+  const statusEl=document.getElementById('import-status');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const parsed=JSON.parse(e.target.result);
+      if(!parsed||typeof parsed!=='object')throw new Error('Nieprawidłowy plik');
+      localStorage.setItem('ao_ec_v7',e.target.result);
+      load();
+      if(cloudNick){
+        if(statusEl)statusEl.textContent='⏳ Wgrywam do chmury...';
+        await saveToCloud();
+        if(statusEl)statusEl.textContent='✅ Zaimportowano i wgrano do chmury!';
+      } else {
+        if(statusEl)statusEl.textContent='✅ Zaimportowano lokalnie!';
+      }
+      render();
+    }catch(err){
+      if(statusEl)statusEl.textContent='❌ Błąd: '+err.message;
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ══════════ SUPABASE SYNC ══════════
