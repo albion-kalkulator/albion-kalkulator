@@ -233,13 +233,13 @@ select.fi option{background:var(--s2)}
 .stab-k{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
 .stab-v{font-size:1rem;font-weight:700}
 .stab-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
-.stab-card-row{display:flex;gap:14px;align-items:center;flex-wrap:nowrap}
+.stab-card-row{display:flex;gap:16px;align-items:flex-start;flex-wrap:nowrap}
 .stab-card-main{flex:1;min-width:0}
-.stab-card-icon{flex-shrink:0;margin-left:auto}
-.stab-card-icon img{width:96px;height:96px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.35);padding:6px;display:block}
+.stab-card-icon{flex-shrink:0;order:-1}
+.stab-card-icon img{width:120px;height:120px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.35);padding:8px;display:block}
 .sum-head-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:0}
-.sum-head-icon{flex-shrink:0;margin-left:auto}
-.sum-head-icon img{width:88px;height:88px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.35);padding:6px;display:block}
+.sum-head-icon{flex-shrink:0;margin-right:4px}
+.sum-head-icon img{width:112px;height:112px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.35);padding:8px;display:block}
 .stab-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .stab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 /* AWAITING TAB */
@@ -1356,6 +1356,7 @@ function buildSummaryTab(){
     }).join('');
     return`<div class="stab-card">
       <div class="stab-card-row">
+        ${finalIconUrl?`<div class="stab-card-icon"><img src="${esc(finalIconUrl)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:''}
         <div class="stab-card-main">
           <div class="stab-head" style="margin-bottom:8px">
             <div style="flex:1;min-width:0">
@@ -1379,7 +1380,6 @@ function buildSummaryTab(){
           <div style="display:flex;flex-wrap:wrap;gap:5px">${matPills||`<span style="font-size:.8rem;color:var(--muted)">${pl?'brak danych':'no data'}</span>`}</div>`
           :`<span class="sum-na">${t('fill_prices')}</span>`}
         </div>
-        ${finalIconUrl?`<div class="stab-card-icon"><img src="${esc(finalIconUrl)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:''}
       </div>
     </div>`;
   }).join(''):`<div class="pn" style="padding:24px;text-align:center">${t('sum_tab_empty')}</div>`;
@@ -1613,6 +1613,7 @@ function buildSummary(item,sum){
 
   return`<div class="sum-card">
     <div class="sum-head">
+      ${(()=>{const u=itemFinalIconUrl(item);return u?`<div class="sum-head-icon"><img src="${esc(u)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:'';})()}
       <div class="sum-head-main">
         ${t('s_title')}
         <span style="color:${tc};font-size:.95rem">${item.tier}${ENC[from]} → ${item.tier}${ENC[to]}</span>
@@ -1620,7 +1621,6 @@ function buildSummary(item,sum){
         <span class="sum-badge">${tQ(item.quality)}</span>
         <span class="sum-badge">${item.sellOrder?'📋 Sell Order':t('instant')}</span>
       </div>
-      ${(()=>{const u=itemFinalIconUrl(item);return u?`<div class="sum-head-icon"><img src="${esc(u)}" alt="" onerror="this.parentElement.style.display='none'"></div>`:'';})()}
     </div>
     <div class="sum-lines">
       <div class="sum-line">
