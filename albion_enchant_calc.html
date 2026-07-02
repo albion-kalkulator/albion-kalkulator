@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albion Online – Enchant Calc</title>
+<style>
+:root{
+  --bg:#08081a;--s1:#10102a;--s2:#181838;--s3:#202048;
+  --border:#2e2e60;--gold:#c9a84c;--gold-l:#e8c96a;--gold-d:#7a5f20;
+  --text:#e0d5c0;--muted:#8080b0;--green:#4caf50;--gbg:rgba(76,175,80,.10);
+  --red:#f44336;--rbg:rgba(244,67,54,.10);--blue:#5599ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5}
+
+/* HEADER */
+#hdr{background:linear-gradient(180deg,#200f00,#0e0600);border-bottom:2px solid var(--gold-d);padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:relative;z-index:10}
+.logo-i{font-size:2rem}
+.logo-main{font-size:1rem;font-weight:700;color:var(--gold-l);letter-spacing:1px;text-transform:uppercase}
+.logo-sub{font-size:.7rem;color:var(--muted)}
+.prem-btn{display:flex;align-items:center;gap:9px;padding:8px 16px;background:var(--s2);border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:all .2s;user-select:none;color:var(--muted)}
+.prem-btn:hover{border-color:var(--gold-d);color:var(--text)}
+.prem-btn.on{background:linear-gradient(135deg,#3d2500,#4f3200);border-color:var(--gold);color:var(--gold-l);box-shadow:0 0 20px rgba(201,168,76,.25)}
+.prem-btn img{height:24px;border-radius:4px;object-fit:cover}
+.prem-btn .lbl{font-weight:700;font-size:.9rem}
+/* City */
+.city-wrap{position:relative}
+.city-btn{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--s2);border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:all .2s;user-select:none}
+.city-btn:hover,.city-btn.open{border-color:var(--gold-d)}
+.city-btn .c-icon{font-size:1.6rem;line-height:1}
+.city-btn .c-name{font-size:.9rem;font-weight:600}
+.city-btn .c-arr{font-size:.7rem;color:var(--muted);margin-left:4px;transition:transform .2s}
+.city-btn.open .c-arr{transform:rotate(180deg)}
+#city-panel{position:absolute;top:calc(100% + 6px);left:0;background:var(--s1);border:2px solid var(--border);border-radius:14px;padding:16px;z-index:200;min-width:540px;box-shadow:0 12px 40px rgba(0,0,0,.7);display:none}
+#city-panel.open{display:block}
+.city-panel-ttl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.city-panel-ttl img{height:20px;filter:drop-shadow(0 0 4px rgba(201,168,76,.5))}
+.city-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.city-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:var(--s2);border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;user-select:none}
+.city-tile:hover{border-color:var(--gold-d);background:var(--s3)}
+.city-tile.active{background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05));border-color:var(--gold)}
+.ct-icon{font-size:2.6rem;line-height:1}
+.ct-name{font-size:.8rem;font-weight:700;text-align:center;white-space:nowrap}
+.ct-count{font-size:.68rem;color:var(--muted)}
+
+/* TABS */
+#tabs{display:flex;background:var(--s1);border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto}
+#sticky-top{position:sticky;top:0;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.6)}
+.tab-btn{padding:12px 20px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);font-weight:600;font-size:.88rem;white-space:nowrap;transition:all .2s;user-select:none}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-pane{display:none;padding:20px}
+.tab-pane.active{display:block}
+.sec-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px}
+.city-ctx{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;margin-bottom:16px;font-size:.82rem;color:var(--muted)}
+
+/* MATERIALS */
+.mat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mat-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px}
+.mat-card-ttl{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.mat-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.025);border-radius:8px}
+.mat-row:last-child{margin-bottom:0}
+.mat-img{width:52px;height:52px;object-fit:contain;border-radius:7px;flex-shrink:0}
+.mat-name{flex:1;font-size:.92rem;line-height:1.4}
+.mat-inp{width:130px;background:var(--s2);border:1.5px solid var(--border);color:var(--text);border-radius:7px;padding:9px 11px;font-size:.95rem;text-align:right;flex-shrink:0}
+.mat-inp:focus{outline:none;border-color:var(--gold)}
+
+/* SETTINGS */
+.scard{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;max-width:460px;margin-bottom:14px}
+.scard-ttl{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:14px}
+.s-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.s-row:last-child{margin-bottom:0}
+.s-row label{flex:1;font-size:.88rem;color:var(--muted)}
+.s-row input{width:80px;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 9px;font-size:.88rem;text-align:right}
+.s-row input:focus{outline:none;border-color:var(--gold)}
+.s-row .unit{font-size:.8rem;color:var(--muted);width:16px}
+.hint{font-size:.75rem;color:var(--muted);margin-top:10px;line-height:1.6}
+/* Language toggle */
+.lang-toggle{display:flex;gap:8px;margin-bottom:14px}
+.lang-btn{padding:10px 22px;border-radius:9px;border:2px solid var(--border);background:var(--s2);color:var(--muted);font-size:.92rem;font-weight:600;cursor:pointer;transition:all .2s;user-select:none}
+.lang-btn:hover{border-color:var(--gold-d);color:var(--text)}
+.lang-btn.active{background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.06));border-color:var(--gold);color:var(--gold-l)}
+
+/* ITEM CARDS */
+.items-list{display:flex;flex-direction:column;gap:16px}
+.sort-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--s1);border:1px solid var(--border);border-radius:10px}
+.sort-lbl{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-right:4px;white-space:nowrap}
+.sort-btn{display:flex;align-items:center;gap:5px;padding:6px 13px;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;user-select:none;white-space:nowrap}
+.sort-btn:hover{border-color:var(--gold-d);color:var(--text)}
+.sort-btn.active{background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.06));border-color:var(--gold);color:var(--gold-l)}
+.add-btn{display:flex;align-items:center;justify-content:center;gap:9px;padding:16px;background:var(--s1);border:2px dashed var(--border);border-radius:12px;cursor:pointer;color:var(--muted);font-size:.95rem;transition:all .2s;user-select:none}
+.add-btn:hover{border-color:var(--gold-d);color:var(--gold)}
+.item-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.item-top{background:var(--s2);padding:14px;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.item-icon{width:90px;height:90px;background:var(--bg);border:2px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2.4rem;overflow:hidden;cursor:pointer;flex-shrink:0;position:relative;transition:border-color .2s}
+.item-icon:hover{border-color:var(--gold)}
+.item-icon img{width:100%;height:100%;object-fit:contain}
+.icon-hint{position:absolute;bottom:0;right:0;font-size:.58rem;background:rgba(0,0,0,.7);color:var(--gold);padding:2px 4px;border-radius:4px 0 0 0}
+.item-fields{display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap;flex:1}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.fi{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 10px;font-size:.85rem}
+.fi:focus{outline:none;border-color:var(--gold)}
+select.fi option{background:var(--s2)}
+.item-ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto;align-self:flex-start;padding-top:4px}
+/* Big sell order button */
+.so-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--s2);border:2px solid var(--border);border-radius:9px;color:var(--muted);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;user-select:none;white-space:nowrap}
+.so-btn:hover{border-color:var(--gold-d);color:var(--text)}
+.so-btn.on{background:linear-gradient(135deg,rgba(76,175,80,.18),rgba(76,175,80,.06));border-color:var(--green);color:var(--green);box-shadow:0 0 14px rgba(76,175,80,.22)}
+.so-btn input{display:none}
+.btn-rm{background:none;border:1px solid rgba(244,67,54,.35);color:var(--red);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:.82rem;transition:all .2s}
+.btn-rm:hover{background:rgba(244,67,54,.18)}
+
+/* ITEM BODY */
+.item-body{padding:14px 16px}
+.range-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.range-lbl{font-size:.85rem;color:var(--muted);font-weight:600}
+.rsel{background:var(--s2);border:1.5px solid var(--border);color:var(--text);border-radius:7px;padding:7px 12px;font-size:.88rem;cursor:pointer;font-weight:600}
+.rsel:focus{outline:none;border-color:var(--gold)}
+.rsel option{background:var(--s2)}
+.arr-big{color:var(--gold);font-size:1.3rem;font-weight:700}
+.range-info{font-size:.82rem;font-weight:700;border-radius:6px;padding:4px 10px;border:1px solid}
+.prices-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end}
+.pg2{display:flex;flex-direction:column;gap:4px;flex:1;min-width:88px}
+.pg2 .pl{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.18)}
+.d0{background:#777}.d1{background:#3dbf40}.d2{background:#4488ff}.d3{background:#aa44ff}
+.pin{background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:8px 9px;font-size:.88rem;width:100%;text-align:right}
+.pin:focus{outline:none;border-color:var(--gold)}
+
+/* RESULTS TABLE */
+.tbl-wrap{overflow-x:auto;margin-bottom:16px}
+.rtbl{width:100%;border-collapse:collapse;font-size:14px;min-width:880px}
+.rtbl th{background:rgba(0,0,0,.45);color:var(--muted);padding:10px 11px;text-align:left;font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
+.rtbl td{padding:10px 11px;border-bottom:1px solid rgba(46,46,96,.5);vertical-align:middle}
+.rtbl tr:last-child td{border-bottom:none}
+.rtbl tr.rg{background:var(--gbg)}
+.rtbl tr.rb{background:var(--rbg)}
+.rtbl tr.rdim{opacity:.4}
+.pg{color:var(--green);font-weight:700}
+.pb{color:var(--red);font-weight:700}
+.pn{color:var(--muted);font-style:italic}
+.step-l{font-weight:700;white-space:nowrap;font-size:.88rem}
+.mat-cell{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.mat-cell img{width:32px;height:32px;object-fit:contain;border-radius:5px;background:rgba(255,255,255,.04)}
+.mat-cell .mq{color:var(--gold);font-weight:700}
+.verdict{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.vy{background:rgba(76,175,80,.2);color:var(--green);border:1px solid rgba(76,175,80,.4)}
+.vn{background:rgba(244,67,54,.2);color:var(--red);border:1px solid rgba(244,67,54,.4)}
+.vna{background:var(--s3);color:var(--muted);border:1px solid var(--border)}
+.rdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:5px;vertical-align:middle}
+
+/* REQUIRED MATERIALS PILLS (in item card) */
+.req-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:9px}
+.req-lbl{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap;margin-right:4px}
+.req-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px}
+.req-pill img{width:26px;height:26px;object-fit:contain}
+.req-pill .rp-qty{font-weight:700;color:var(--gold-l);font-size:.92rem}
+.req-pill .rp-name{font-size:.82rem;color:var(--muted)}
+/* SUMMARY */
+.sum-card{background:linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.02));border:1.5px solid rgba(201,168,76,.25);border-radius:12px;padding:18px}
+.sum-head{font-size:.88rem;font-weight:700;color:var(--gold-l);margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sum-badge{font-size:.72rem;color:var(--muted);background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:3px 8px}
+.sum-lines{display:flex;flex-direction:column;gap:8px}
+.sum-line{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,.2);border-radius:7px}
+.sum-line-lbl{flex:1;font-size:.88rem;color:var(--muted)}
+.sum-line-val{font-size:.95rem;font-weight:700;white-space:nowrap}
+.sum-sep{height:1px;background:rgba(201,168,76,.15);margin:4px 0}
+.sum-invest{background:rgba(244,67,54,.08);border:1px solid rgba(244,67,54,.2);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-top:4px}
+.sum-profit-box{border-radius:9px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+.sum-profit-box.good{background:rgba(76,175,80,.1);border:1.5px solid rgba(76,175,80,.35)}
+.sum-profit-box.bad{background:rgba(244,67,54,.1);border:1.5px solid rgba(244,67,54,.35)}
+.sum-profit-big{font-size:1.3rem;font-weight:700}
+.sum-daily{font-size:.82rem;color:var(--muted);margin-left:auto;white-space:nowrap}
+.sum-na{color:var(--muted);font-style:italic;font-size:.85rem}
+
+/* BACK TO TOP */
+#btn-top,#btn-bot{position:fixed;right:24px;width:46px;height:46px;background:linear-gradient(135deg,var(--s2),var(--s3));border:2px solid var(--gold-d);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:500;font-size:1.1rem;color:var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s,border-color .2s}
+#btn-top{bottom:78px}
+#btn-bot{bottom:24px}
+#btn-top.vis,#btn-bot.vis{opacity:1;pointer-events:auto}
+#btn-top:hover,#btn-bot:hover{border-color:var(--gold)}
+#btn-top:hover{transform:scale(1.1) translateY(-2px)}
+#btn-bot:hover{transform:scale(1.1) translateY(2px)}
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:999}
+.mbox{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;width:92%;max-width:420px}
+.mbox h3{color:var(--gold);margin-bottom:6px;font-size:.95rem}
+.msub{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.55}
+.minp{width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 12px;font-size:.9rem;margin-bottom:12px}
+.minp:focus{outline:none;border-color:var(--gold)}
+.mprev{min-height:56px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;background:var(--s2);border-radius:9px;margin-bottom:12px}
+.mprev img{height:56px;width:56px;object-fit:contain}
+.mbtns{display:flex;gap:8px;justify-content:flex-end}
+.bcnl{padding:8px 16px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.bcnl:hover{border-color:var(--text);color:var(--text)}
+.bok{padding:8px 18px;background:linear-gradient(135deg,var(--gold),var(--gold-d));border:none;color:#1a0900;border-radius:7px;cursor:pointer;font-size:.85rem;font-weight:700}
+.bok:hover{background:linear-gradient(135deg,var(--gold-l),var(--gold))}
+
+@media(max-width:1200px){.mat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.mat-grid{grid-template-columns:1fr}}
+/* SEARCH AUTOCOMPLETE */
+.search-wrap{position:relative;display:inline-block}
+.search-dd{position:absolute;top:100%;left:0;min-width:280px;background:var(--s1);border:1.5px solid var(--border);border-radius:9px;z-index:300;max-height:280px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.8)}
+.sdd-item{padding:7px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid rgba(46,46,96,.5);transition:background .12s}
+.sdd-item:last-child{border-bottom:none}
+.sdd-item:hover,.sdd-item.focus{background:var(--s2)}
+.sdd-item img{width:28px;height:28px;object-fit:contain;border-radius:4px;flex-shrink:0}
+.sdd-name{font-size:.86rem;color:var(--text)}
+.sdd-msg{padding:12px;text-align:center;color:var(--muted);font-size:.82rem}
+/* ADD-TO-SUMMARY / MARKET BUTTONS */
+.sum-act-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn-add-sum{padding:7px 15px;border-radius:8px;border:1.5px solid var(--border);background:var(--s2);color:var(--muted);font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-add-sum:hover{border-color:var(--gold-d);color:var(--text)}
+.btn-add-sum.on{background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.06));border-color:var(--gold);color:var(--gold-l)}
+.btn-to-market{padding:7px 15px;border-radius:8px;border:1.5px solid rgba(76,175,80,.45);background:rgba(76,175,80,.08);color:#4caf50;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-to-market:hover{background:rgba(76,175,80,.18)}
+/* SUMMARY TAB */
+.stab-total{background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.02));border:1.5px solid rgba(201,168,76,.25);border-radius:12px;padding:16px;margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap}
+.stab-kv{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:160px}
+.stab-k{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.stab-v{font-size:1rem;font-weight:700}
+.stab-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.stab-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.stab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+/* AWAITING TAB */
+.await-card{background:var(--s1);border:1.5px solid rgba(76,175,80,.2);border-radius:10px;padding:14px;margin-bottom:10px}
+.await-head{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.await-info{flex:1;min-width:0}
+.await-name{font-weight:700;font-size:.95rem}
+.await-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+.await-nums{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap}
+.btn-sold{padding:8px 18px;border-radius:8px;border:1.5px solid rgba(76,175,80,.5);background:rgba(76,175,80,.1);color:#4caf50;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-sold:hover{background:rgba(76,175,80,.25)}
+/* STATS BOX */
+.stats-box{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.stats-head{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stats-kv{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.stats-k{font-size:.68rem;color:var(--muted);margin-bottom:3px}
+.stats-v{font-size:1rem;font-weight:700;color:var(--gold-l)}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<button id="btn-top" title="Wróć na górę" onclick="window.scrollTo({top:0,behavior:'smooth'})">▲</button>
+<button id="btn-bot" title="Przejdź na dół" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})">▼</button>
+<script>
+// ══════════ TRANSLATIONS ══════════
+const LANGS = {
+pl:{
+  tab_items:'⚔️ Itemki', tab_mats:'🔷 Materiały', tab_settings:'⚙️ Ustawienia',
+  tab_summary:'📋 Podsumowanie', tab_awaiting:'⏳ Oczekuje na sprzedaż',
+  btn_add_sum:'📋 Dodaj do podsumowania', btn_in_sum:'✓ W podsumowaniu',
+  btn_to_market:'🏪 Wstawiono na market', btn_sold:'Sprzedano',
+  sum_tab_empty:'Brak itemów. Kliknij "Dodaj do podsumowania" przy kalkulacji.',
+  await_tab_empty:'Brak wystawionych itemów.',
+  stats_title:'📈 Statystyki sprzedaży',
+  stats_today:'Dziś', stats_week:'Tydzień', stats_month:'Miesiąc', stats_all:'All Time',
+  sum_total_profit:'Łączny zarobek', sum_total_invest:'Łączna inwestycja', sum_total_mat:'Łączne materiały',
+  await_total_value:'Łączna wartość wystawionych', await_total_profit:'Spodziewany zysk',
+  listed_at:'wystawiono', sold_str:'sprzedano',
+  search_placeholder:'Szukaj itemu...', search_searching:'Szukam...', search_none:'Brak wyników', search_err:'Błąd wyszukiwania',
+  search_loading:'Ładuję bazę itemów (raz na sesję)...',
+  prem_on:'Premium ON', prem_off:'Premium OFF',
+  city_title:'Wybierz miasto / rynek',
+  city_items:'Itemki na rynku:', city_mats:'Materiały dla rynku:',
+  mat_rune:'Runa', mat_soul:'Dusza', mat_relic:'Relikt',
+  qual:['Normalny','Dobry','Znakomity','Doskonały','Arcydzieło'],
+  type:{
+    '1h':'Broń 1H','2h':'Broń 2H','armor':'Zbroja','bag':'Sakwa',
+    'helm':'Hełm','boots':'Buty','cape':'Peleryna','offhand':'Off-hand',
+    'g_helm':'Gath. Hełm','g_armor':'Gath. Zbroja','g_boots':'Gath. Buty','g_bag':'Gath. Sakwa'
+  },
+  lbl_name:'Nazwa', lbl_type:'Typ', lbl_tier:'Tier', lbl_quality:'Jakość',
+  lbl_range:'Zakres:', lbl_qty:'📦 Ilość (szt.)', lbl_daily:'📊 Dzienna sprzed.',
+  lbl_add:'➕ Dodaj item', lbl_remove:'✕ Usuń',
+  th_step:'Krok', th_mat:'Materiał', th_mat_price:'Cena mat./szt.',
+  th_mat_cost:'Koszt mat.', th_buy:'Cena zakupu', th_sell:'Cena sprzedaży',
+  th_tax_u:'Podatek/szt.', th_tax_t:'Podatek łącznie', th_p_u:'Zysk / szt.',
+  th_p_t:'Zysk ×', th_daily:'Rec. dzienna (20%)', th_worth:'Opłaca się?',
+  s_title:'📊 Podsumowanie:', s_req:'Wymagane materiały',
+  s_mat_total:'Łączny koszt materiałów:',
+  s_buy_u:'Cena zakupu / szt.', s_buy_t:'Cena zakupu ×',
+  s_cost_t:'Łączny koszt całkowity (zakup + mat.) ×',
+  s_sell_u:'Cena sprzedaży / szt.', s_tax_u:'Podatek / szt.',
+  s_tax_t:'Podatek łączny ×', s_net_u:'Netto / szt.', s_net_t:'Netto łączne ×',
+  s_yes:'✓ OPŁACA SIĘ', s_no:'✗ NIE OPŁACA', s_per_u:'/ szt.',
+  s_daily:'Zalecana dzienna:', s_per_day:'/dzień',
+  set_tax_no:'Podatek – bez Premium', set_tax_prem:'Podatek – Premium 👑',
+  set_fee:'Opłata za wystawienie zlecenia',
+  set_fee_hint:'2.5% pobierana przy wystawieniu (Sell Order), niezależnie od premium.',
+  set_tax_hint:'Albion Online: 8% bez / 4% z premium.',
+  set_n_title:'📦 Ilość materiałów N wg typu', set_per_step:'× / krok',
+  lang_lbl:'🌐 Język / Language',
+  no_data:'brak danych', fill_prices:'Uzupełnij ceny, aby zobaczyć kalkulację.',
+  fill_range:'Uzupełnij ceny dla zakresu', to_see_sum:' aby zobaczyć podsumowanie.',
+  instant:'💰 Instant Sell', tax_total:'Podatek łącznie:',
+  city_desc:{
+    'Bridgewatch':'Step','Fort Sterling':'Góry','Lymhurst':'Las',
+    'Martlock':'Wyżyny','Thetford':'Mokradła','Caerleon':'Królewskie Miasto',
+    'Brecilien':'Wieczny Las','Black Market':'Czarny Rynek'
+  },
+  items_count:(n)=>n===1?'1 item':n+' itemów',
+},
+en:{
+  tab_items:'⚔️ Items', tab_mats:'🔷 Materials', tab_settings:'⚙️ Settings',
+  tab_summary:'📋 Summary', tab_awaiting:'⏳ Awaiting Sale',
+  btn_add_sum:'📋 Add to Summary', btn_in_sum:'✓ In Summary',
+  btn_to_market:'🏪 Listed on Market', btn_sold:'Sold',
+  sum_tab_empty:'No items added. Click "Add to Summary" in the calculator.',
+  await_tab_empty:'No items currently listed.',
+  stats_title:'📈 Sales Statistics',
+  stats_today:'Today', stats_week:'Week', stats_month:'Month', stats_all:'All Time',
+  sum_total_profit:'Total Profit', sum_total_invest:'Total Investment', sum_total_mat:'Total Materials',
+  await_total_value:'Total Listed Value', await_total_profit:'Expected Profit',
+  listed_at:'listed', sold_str:'sold',
+  search_placeholder:'Search item...', search_searching:'Searching...', search_none:'No results', search_err:'Search error',
+  search_loading:'Loading item database (once per session)...',
+  prem_on:'Premium ON', prem_off:'Premium OFF',
+  city_title:'Select city / market',
+  city_items:'Items on market:', city_mats:'Materials for market:',
+  mat_rune:'Rune', mat_soul:'Soul', mat_relic:'Relic',
+  qual:['Normal','Good','Outstanding','Excellent','Masterpiece'],
+  type:{
+    '1h':'1H Weapon','2h':'2H Weapon','armor':'Armor','bag':'Bag',
+    'helm':'Helm','boots':'Boots','cape':'Cape','offhand':'Off-hand',
+    'g_helm':'Gath. Helm','g_armor':'Gath. Armor','g_boots':'Gath. Boots','g_bag':'Gath. Bag'
+  },
+  lbl_name:'Name', lbl_type:'Type', lbl_tier:'Tier', lbl_quality:'Quality',
+  lbl_range:'Range:', lbl_qty:'📦 Quantity', lbl_daily:'📊 Daily Sales',
+  lbl_add:'➕ Add Item', lbl_remove:'✕ Remove',
+  th_step:'Step', th_mat:'Material', th_mat_price:'Mat. price/unit',
+  th_mat_cost:'Mat. cost', th_buy:'Buy price', th_sell:'Sell price',
+  th_tax_u:'Tax/unit', th_tax_t:'Total tax', th_p_u:'Profit/unit',
+  th_p_t:'Profit ×', th_daily:'Rec. daily (20%)', th_worth:'Worth it?',
+  s_title:'📊 Summary:', s_req:'Required materials',
+  s_mat_total:'Total material cost:',
+  s_buy_u:'Buy price / unit', s_buy_t:'Buy price ×',
+  s_cost_t:'Total cost (buy + mat.) ×',
+  s_sell_u:'Sell price / unit', s_tax_u:'Tax / unit',
+  s_tax_t:'Total tax ×', s_net_u:'Net sell / unit', s_net_t:'Net total ×',
+  s_yes:'✓ PROFITABLE', s_no:'✗ NOT PROFITABLE', s_per_u:' / unit',
+  s_daily:'Rec. daily:', s_per_day:'/day',
+  set_tax_no:'Sales tax – no Premium', set_tax_prem:'Sales tax – Premium 👑',
+  set_fee:'Sell order setup fee',
+  set_fee_hint:'2.5% charged when listing a sell order, regardless of premium.',
+  set_tax_hint:'Albion Online: 8% without / 4% with premium.',
+  set_n_title:'📦 Material amount N by type', set_per_step:'× / step',
+  lang_lbl:'🌐 Język / Language',
+  no_data:'no data', fill_prices:'Fill in prices above to see calculations.',
+  fill_range:'Fill in prices for range', to_see_sum:' to see summary.',
+  instant:'💰 Instant Sell', tax_total:'Total tax:',
+  city_desc:{
+    'Bridgewatch':'Steppe','Fort Sterling':'Mountain','Lymhurst':'Forest',
+    'Martlock':'Highland','Thetford':'Swamp','Caerleon':'Royal City',
+    'Brecilien':'Eternal Forest','Black Market':'Black Market'
+  },
+  items_count:(n)=>n===1?'1 item':n+' items',
+}};
+
+// ══════════ CONSTANTS ══════════
+const ITEM_TYPE_KEYS = {
+  '1h':      {emoji:'⚔️', n:288},
+  '2h':      {emoji:'🗡️', n:384},
+  'armor':   {emoji:'🛡️', n:192},
+  'bag':     {emoji:'🎒', n:192},
+  'helm':    {emoji:'⛑️', n: 96},
+  'boots':   {emoji:'👟', n: 96},
+  'cape':    {emoji:'🧣', n: 96},
+  'offhand': {emoji:'🔰', n: 96},
+  'g_helm':  {emoji:'⛏️', n: 96},
+  'g_armor': {emoji:'🪖', n:192},
+  'g_boots': {emoji:'🥾', n: 96},
+  'g_bag':   {emoji:'🎽', n:192},
+};
+const QUALITY_KEYS = ['Normal','Good','Outstanding','Excellent','Masterpiece'];
+const TIERS = ['T4','T5','T6','T7','T8'];
+// Tier colors: T4=blue, T5=red, T6=orange, T7=yellow, T8=white
+const TIER_C = {T4:'#4488ff',T5:'#ff3333',T6:'#ff8820',T7:'#ffdd00',T8:'#e8e8e8'};
+const TIER_PFX    = {T4:"Adept's",   T5:"Expert's",   T6:"Master's",    T7:"Grandmaster's", T8:"Elder's"};
+const TIER_PFX_PL = {T4:'Adepta',    T5:'Eksperta',   T6:'Mistrza',     T7:'Arcymistrza',   T8:'Starszego'};
+const MAT_TYPES = ['rune','soul','relic'];
+// Enchant dot colors: 0=grey, 1=green, 2=blue, 3=purple
+const ENC_COLS  = ['#777','#3dbf40','#4488ff','#aa44ff'];
+const ENC_DOTS  = ['d0','d1','d2','d3'];
+const ENC = ['.0','.1','.2','.3'];
+const STEP_MAT  = ['rune','soul','relic'];
+const STEP_COL  = ['#3dbf40','#4488ff','#aa44ff'];
+
+const CITIES = {
+  'Bridgewatch':   {icon:'🏜️',color:'#f08020'},
+  'Fort Sterling': {icon:'❄️', color:'#80b8d0'},
+  'Lymhurst':      {icon:'🌿',color:'#40a840'},
+  'Martlock':      {icon:'⚓',color:'#4060c0'},
+  'Thetford':      {icon:'☠️',color:'#804020'},
+  'Caerleon':      {icon:'👑',color:'#c02020'},
+  'Brecilien':     {icon:'🌀',color:'#8030c0'},
+  'Black Market':  {icon:'🎭',color:'#505068'},
+};
+const CITY_LIST = Object.keys(CITIES);
+const PREM_IMG   = 'https://preview.redd.it/well-well-well-who-broke-shit-again-yep-albion-devs-this-is-v0-cdr4mnytvzsg1.png?auto=webp&s=a18965d3c499e603921e733645a1337fafd5ebbf';
+const BRIDGE_IMG = 'https://i.redd.it/arpbwq03qnub1.png';
+
+function matImg(tier,mat){
+  const p=encodeURIComponent(TIER_PFX[tier]||'');
+  const n=mat==='rune'?'Rune':mat==='soul'?'Soul':'Relic';
+  return `https://render.albiononline.com/v1/item/${p}%20${n}.png?locale=en`;
+}
+
+// Migration maps for old saves
+const OLD_TYPE_MAP = {
+  'Broń 1H':'1h','Broń 2H':'2h','Zbroja':'armor','Sakwa':'bag','Plecak':'bag',
+  'Hełm':'helm','Buty':'boots','Peleryna':'cape','Off-hand':'offhand',
+  'Gath. Hełm':'g_helm','Gath. Zbroja':'g_armor','Gath. Buty':'g_boots',
+  'Gath. Sakwa':'g_bag','Gath. Plecak':'g_bag',
+  '1H Weapon':'1h','2H Weapon':'2h','Armor':'armor','Bag':'bag',
+  'Helm':'helm','Boots':'boots','Cape':'cape',
+  'Gath. Helm':'g_helm','Gath. Armor':'g_armor','Gath. Boots':'g_boots','Gath. Bag':'g_bag',
+};
+const OLD_QUAL_MAP = {
+  'Normalny':'Normal','Dobry':'Good','Wybitny':'Outstanding',
+  'Doskonały':'Excellent','Arcydzieło':'Masterpiece',
+};
+
+// ══════════ STATE ══════════
+function emptyMats(){return Object.fromEntries(TIERS.map(t=>[t,{rune:'',soul:'',relic:''}]));}
+
+let state = {
+  lang:'pl', premium:false, activeCity:'Bridgewatch', activeTab:'items',
+  materialsByCity: Object.fromEntries(CITY_LIST.map(c=>[c,emptyMats()])),
+  itemsByCity:     Object.fromEntries(CITY_LIST.map(c=>[c,[]])),
+  settings:{taxNoPrem:8, taxPrem:4, setupFee:2.5},
+  iconModal:null,
+  listings: [],       // active market listings
+  salesHistory: [],   // completed sales for stats
+  sort: {key:'none', dir:'asc'},
+};
+let nextId = 1;
+
+// ══════════ TRANSLATION HELPERS ══════════
+const t    = k => LANGS[state.lang][k] ?? LANGS.pl[k] ?? k;
+const tType= k => (LANGS[state.lang].type||{})[k] ?? k;
+const tQ   = k => {const idx=QUALITY_KEYS.indexOf(k); return idx>=0?t('qual')[idx]:k;};
+const tMat = m => m==='rune'?t('mat_rune'):m==='soul'?t('mat_soul'):t('mat_relic');
+// Full localized material name: Polish "Runa Adepta", English "Adept's Rune"
+function tMatFull(tier,m){
+  const base=tMat(m); // Runa / Dusza / Relikt  OR  Rune / Soul / Relic
+  if(state.lang==='pl') return `${base} ${TIER_PFX_PL[tier]||TIER_PFX[tier]}`;
+  return `${TIER_PFX[tier]} ${m==='rune'?'Rune':m==='soul'?'Soul':'Relic'}`;
+}
+
+function getMats(){return state.materialsByCity[state.activeCity];}
+function getItems(){return state.itemsByCity[state.activeCity];}
+function setItem(id,fn){const a=state.itemsByCity[state.activeCity];const i=a.findIndex(x=>x.id===id);if(i>=0)fn(a[i]);}
+
+function newItem(){
+  return {
+    id:nextId++, name:'', icon:'', iconIsUrl:false,
+    uniqueBaseName:'',
+    type:'1h', tier:'T4', quality:'Excellent',
+    prices:{p0:'',p1:'',p2:'',p3:''}, sellOrder:true,
+    qty:1, dailyVol:'', rangeFrom:0, rangeTo:3,
+    inSummary:false,
+  };
+}
+
+// ══════════ CALC ══════════
+function getTaxRate(item){
+  const sale=state.premium?+state.settings.taxPrem:+state.settings.taxNoPrem;
+  const setup=item.sellOrder?+state.settings.setupFee:0;
+  return {sale,setup,total:sale+setup};
+}
+function calcStep(item,step,mats){
+  const bp=parseFloat(item.prices[`p${step}`])||0;
+  const sp=parseFloat(item.prices[`p${step+1}`])||0;
+  if(!bp||!sp)return null;
+  const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+  const N=ti.n, mt=STEP_MAT[step];
+  const mp=parseFloat((mats[item.tier]||{})[mt])||0;
+  const qty=parseInt(item.qty)||1;
+  const tax=getTaxRate(item);
+  const taxAmt=sp*tax.total/100;
+  const matCost=N*mp;
+  const profit=(sp-taxAmt)-bp-matCost;
+  const dv=parseFloat(item.dailyVol)||0;
+  return{step,mt,N,mp,matCost,bp,sp,taxRate:tax.total,taxSale:tax.sale,taxSetup:tax.setup,
+    taxAmt,taxAmtQty:taxAmt*qty,netSell:sp-taxAmt,profit,profitQty:profit*qty,qty,
+    recDaily:dv>0?Math.max(1,Math.round(dv*.2)):null,hasDailyVol:dv>0};
+}
+function calcSummary(item,mats){
+  const from=+item.rangeFrom,to=+item.rangeTo;
+  if(from>=to)return null;
+  const bp=parseFloat(item.prices[`p${from}`])||0;
+  const sp=parseFloat(item.prices[`p${to}`])||0;
+  if(!bp||!sp)return null;
+  const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+  const N=ti.n,qty=parseInt(item.qty)||1;
+  const tax=getTaxRate(item);
+  const mc={rune:0,soul:0,relic:0};
+  let totalMC=0;
+  for(let s=from;s<to;s++){
+    const mt=STEP_MAT[s];const mp=parseFloat((mats[item.tier]||{})[mt])||0;
+    mc[mt]+=N;totalMC+=N*mp;
+  }
+  const taxAmt=sp*tax.total/100,netSell=sp-taxAmt;
+  const profit=netSell-bp-totalMC;
+  const dv=parseFloat(item.dailyVol)||0;
+  return{from,to,N,qty,mc,totalMC,bp,sp,taxRate:tax.total,taxSale:tax.sale,taxSetup:tax.setup,
+    taxAmt,taxAmtQty:taxAmt*qty,netSell,profit,profitQty:profit*qty,
+    totalBuy:bp*qty,totalSell:netSell*qty,totalCost:(bp+totalMC)*qty,
+    recDaily:dv>0?Math.max(1,Math.round(dv*.2)):null,hasDailyVol:dv>0};
+}
+
+// ══════════ FORMAT ══════════
+const f  = n=>(n==null||isNaN(n))?'—':Math.round(n).toLocaleString('pl-PL');
+const fp = n=>(n==null||isNaN(n))?'—':(n>=0?'+':'')+Math.round(n).toLocaleString('pl-PL');
+const esc= s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ══════════ BUILD ══════════
+function buildApp(){
+  document.getElementById('app').innerHTML=
+    '<div id="sticky-top">'+buildHeader()+buildCityPanel()+buildTabs()+'</div>'+
+    '<div id="tc">'+buildMaterials()+buildSettings()+buildItems()+buildSummaryTab()+buildAwaitingTab()+'</div>'+
+    buildIconModal();
+}
+
+function buildHeader(){
+  const city=CITIES[state.activeCity]||CITIES['Bridgewatch'];
+  return`<div id="hdr">
+    <span class="logo-i">⚗️</span>
+    <div>
+      <div class="logo-main">Albion Enchant Calc</div>
+      <div id="sync-status" style="font-size:.68rem;color:var(--muted);margin-top:1px"></div>
+    </div>
+    <div id="nick-display" style="display:none;align-items:center;gap:8px;margin-left:auto;margin-right:0;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;font-weight:600;color:var(--gold-l)">
+      <button onclick="logout()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:0 0 0 6px;border-left:1px solid var(--border);margin-left:4px" title="Wyloguj">✕</button>
+    </div>
+    <div class="prem-btn${state.premium?' on':''}" id="btn-prem">
+      <img src="${esc(PREM_IMG)}" alt="" onerror="this.style.display='none'">
+      <span class="lbl">${state.premium?t('prem_on'):t('prem_off')}</span>
+    </div>
+    <div class="city-wrap" id="city-wrap">
+      <div class="city-btn" id="city-btn">
+        <span class="c-icon">${city.icon}</span>
+        <span class="c-name">${state.activeCity}</span>
+        <span class="c-arr">▼</span>
+      </div>
+      ${buildCityPanel()}
+    </div>
+  </div>`;
+}
+
+function buildCityPanel(){
+  const L=t('lang');
+  return`<div id="city-panel">
+    <div class="city-panel-ttl">
+      <img src="${esc(BRIDGE_IMG)}" alt="" onerror="this.style.display='none'">
+      ${t('city_title')}
+    </div>
+    <div class="city-grid">
+      ${CITY_LIST.map(c=>{
+        const ci=CITIES[c];const cnt=(state.itemsByCity[c]||[]).length;
+        const desc=(LANGS[state.lang].city_desc||{})[c]||c;
+        return`<div class="city-tile${c===state.activeCity?' active':''}" data-ctile="${esc(c)}"
+            style="${c===state.activeCity?`border-color:${ci.color};box-shadow:0 0 14px ${ci.color}44`:''}">
+          <span class="ct-icon">${ci.icon}</span>
+          <span class="ct-name" style="color:${ci.color}">${c}</span>
+          <span class="ct-count">${desc}${cnt?' · '+t('items_count')(cnt):''}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function buildTabs(){
+  const awCount=state.listings.length;
+  const tabs=[
+    {id:'items',l:t('tab_items')},
+    {id:'materials',l:t('tab_mats')},
+    {id:'summary',l:t('tab_summary')},
+    {id:'awaiting',l:t('tab_awaiting')+(awCount?` <span style="background:var(--green);color:#000;border-radius:999px;padding:1px 7px;font-size:.7rem;font-weight:700">${awCount}</span>`:'')},
+    {id:'settings',l:t('tab_settings')},
+  ];
+  return`<div id="tabs" style="position:relative;z-index:5">${tabs.map(tb=>`<div class="tab-btn${state.activeTab===tb.id?' active':''}" data-tab="${tb.id}">${tb.l}</div>`).join('')}</div>`;
+}
+
+function buildMaterials(){
+  const mats=getMats(),city=CITIES[state.activeCity];
+  return`<div class="tab-pane${state.activeTab==='materials'?' active':''}">
+    <div class="city-ctx"><span>${city.icon}</span>${t('city_mats')} <strong style="color:${city.color}">${state.activeCity}</strong></div>
+    <div class="mat-grid">
+      ${TIERS.map(tier=>`
+        <div class="mat-card">
+          <div class="mat-card-ttl"><span style="color:${TIER_C[tier]};font-size:1rem">${tier}</span> <span style="color:var(--muted)">(${TIER_PFX[tier]})</span></div>
+          ${MAT_TYPES.map(m=>`
+            <div class="mat-row">
+              <img class="mat-img" src="${matImg(tier,m)}" alt="${m}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <span style="display:none;font-size:2rem">${m==='rune'?'🔷':m==='soul'?'💠':'💎'}</span>
+              <div class="mat-name"><strong>${tMatFull(tier,m)}</strong></div>
+              <input type="number" class="mat-inp" min="0" step="1"
+                data-mat="${esc(tier)}-${m}" value="${esc(mats[tier]?mats[tier][m]:'')}" placeholder="0">
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+  </div>`;
+}
+
+function buildSettings(){
+  const s=state.settings;
+  return`<div class="tab-pane${state.activeTab==='settings'?' active':''}">
+    <div class="scard">
+      <div class="scard-ttl">${t('lang_lbl')}</div>
+      <div class="lang-toggle">
+        <button class="lang-btn${state.lang==='pl'?' active':''}" data-lang="pl">🇵🇱 Polski</button>
+        <button class="lang-btn${state.lang==='en'?' active':''}" data-lang="en">🇬🇧 English</button>
+      </div>
+    </div>
+    <div class="scard">
+      <div class="scard-ttl">💰 ${state.lang==='pl'?'Podatki':'Taxes'}</div>
+      <div class="s-row"><label>${t('set_tax_no')}</label><input type="number" min="0" max="100" step=".01" data-sett="taxNoPrem" value="${s.taxNoPrem}"><span class="unit">%</span></div>
+      <div class="s-row"><label>${t('set_tax_prem')}</label><input type="number" min="0" max="100" step=".01" data-sett="taxPrem" value="${s.taxPrem}"><span class="unit">%</span></div>
+      <div class="hint">${t('set_tax_hint')}</div>
+    </div>
+    <div class="scard">
+      <div class="scard-ttl">📋 Sell Order</div>
+      <div class="s-row"><label>${t('set_fee')}</label><input type="number" min="0" max="100" step=".01" data-sett="setupFee" value="${s.setupFee}"><span class="unit">%</span></div>
+      <div class="hint">${t('set_fee_hint')}</div>
+    </div>
+    <div class="scard" style="max-width:560px">
+      <div class="scard-ttl">${t('set_n_title')}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${Object.entries(ITEM_TYPE_KEYS).map(([k,d])=>`
+          <div class="s-row"><label>${d.emoji} ${tType(k)}</label><strong style="color:var(--gold)">${d.n} ${t('set_per_step')}</strong></div>
+        `).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function sortItems(items){
+  const mats=getMats();
+  const {key,dir}=state.sort;
+  if(key==='none')return items;
+  const TIER_ORDER=['T2','T3','T4','T5','T6','T7','T8'];
+  const scored=items.map(item=>{
+    const sum=calcSummary(item,mats);
+    const fee=sum&&item.sellOrder?sum.sp*(state.settings.setupFee/100)*sum.qty:0;
+    const inv=sum?sum.totalMC*sum.qty+sum.bp*sum.qty+fee:0;
+    const roi=inv>0&&sum?sum.profitQty/inv:0;
+    const tierIdx=TIER_ORDER.indexOf(item.tier);
+    return{item,inv,roi,tierIdx};
+  });
+  scored.sort((a,b)=>{
+    let v=0;
+    if(key==='tier')    v=a.tierIdx-b.tierIdx;
+    if(key==='roi')     v=a.roi-b.roi;
+    if(key==='invest')  v=a.inv-b.inv;
+    return dir==='asc'?v:-v;
+  });
+  return scored.map(s=>s.item);
+}
+
+function buildItems(){
+  const pl=state.lang==='pl';
+  const rawItems=getItems(),city=CITIES[state.activeCity];
+  const items=sortItems(rawItems);
+  const {key,dir}=state.sort;
+  const SORTS=[
+    {k:'none',  lpl:'Domyślnie',       len:'Default'},
+    {k:'tier',  lpl:'Tier',            len:'Tier'},
+    {k:'roi',   lpl:'Stopa zwrotu',    len:'ROI'},
+    {k:'invest',lpl:'Inwestycja',      len:'Investment'},
+  ];
+  const sortBar=`<div class="sort-bar">
+    <span class="sort-lbl">${pl?'Sortuj:':'Sort:'}</span>
+    ${SORTS.map(s=>`<button class="sort-btn${key===s.k?' active':''}" data-sortkey="${s.k}">
+      ${pl?s.lpl:s.len}${key===s.k?' '+(dir==='asc'?'↑':'↓'):''}
+    </button>`).join('')}
+  </div>`;
+  return`<div class="tab-pane${state.activeTab==='items'?' active':''}">
+    <div class="city-ctx"><span>${city.icon}</span>${t('city_items')} <strong style="color:${city.color}">${state.activeCity}</strong></div>
+    ${sortBar}
+    <div class="items-list">
+      ${items.map(item=>buildItemCard(item)).join('')}
+      <div class="add-btn" id="btn-add">${t('lbl_add')}</div>
+    </div>
+  </div>`;
+}
+
+function buildSummaryTab(){
+  const pl=state.lang==='pl';
+  const active=state.activeTab==='summary';
+  const mats=getMats();
+  const items=getItems().filter(i=>i.inSummary);
+  let totalInvest=0,totalProfit=0;
+  const totalMcByTier={};// {tier:{rune,soul,relic}}
+  const baseItemPills=[];
+  items.forEach(item=>{
+    const sum=calcSummary(item,mats);if(!sum)return;
+    const fee=item.sellOrder?sum.sp*(state.settings.setupFee/100)*sum.qty:0;
+    totalInvest+=sum.totalMC*sum.qty+sum.bp*sum.qty+fee;
+    totalProfit+=sum.profitQty;
+    if(!totalMcByTier[item.tier])totalMcByTier[item.tier]={rune:0,soul:0,relic:0};
+    MAT_TYPES.forEach(m=>{totalMcByTier[item.tier][m]+=(sum.mc[m]||0)*sum.qty;});
+    const tc=TIER_C[item.tier];
+    const iconH=item.iconIsUrl?`<img src="${esc(item.icon)}" style="width:22px;height:22px;object-fit:contain" alt="" onerror="this.style.display='none'">`:'';
+    baseItemPills.push(`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;margin:2px">
+      ${iconH}
+      <span style="font-weight:700;color:${tc}">${sum.qty}×</span>
+      <span style="font-size:.8rem;color:var(--muted)">${esc(item.name||tType(item.type))} <span style="color:${tc}">${item.tier}${ENC[sum.from]}</span></span>
+    </span>`);
+  });
+  // Build materials breakdown HTML with icons per tier
+  const matBreakdown=TIERS.filter(tier=>totalMcByTier[tier]).map(tier=>{
+    const tc=TIER_C[tier];
+    const pills=MAT_TYPES.filter(m=>totalMcByTier[tier][m]>0).map(m=>{
+      const imgUrl=matImg(tier,m);
+      return`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;margin:2px">
+        <img src="${imgUrl}" style="width:20px;height:20px;object-fit:contain" alt="" onerror="this.style.display='none'">
+        <span style="font-weight:700;color:var(--gold-l)">${f(totalMcByTier[tier][m])}×</span>
+        <span style="font-size:.8rem;color:var(--muted)">${tMatFull(tier,m)}</span>
+      </span>`;
+    }).join('');
+    return`<div style="margin-bottom:6px"><span style="font-size:.75rem;font-weight:700;color:${tc};margin-right:6px">${tier}</span>${pills}</div>`;
+  }).join('')||'—';
+  const baseItemsHtml=baseItemPills.length?`<div style="margin-bottom:8px"><span style="font-size:.75rem;font-weight:700;color:var(--muted);margin-right:6px;text-transform:uppercase;letter-spacing:.5px">${pl?'Bazowe itemy':'Base items'}</span><div style="display:flex;flex-wrap:wrap">${baseItemPills.join('')}</div></div>`:'';
+
+  const totals=`<div class="stab-total">
+    <div class="stab-kv"><div class="stab-k">${t('sum_total_invest')}</div><div class="stab-v" style="color:var(--red)">${f(totalInvest)} 💰</div></div>
+    <div class="stab-kv"><div class="stab-k">${t('sum_total_profit')}</div><div class="stab-v ${totalProfit>=0?'pg':'pb'}">${fp(totalProfit)} 💰</div></div>
+    <div class="stab-kv" style="flex:2;min-width:280px"><div class="stab-k">${t('sum_total_mat')}</div><div style="margin-top:4px">${baseItemsHtml}${matBreakdown}</div></div>
+  </div>`;
+  const rows=items.length?items.map(item=>{
+    const sum=calcSummary(item,mats);
+    const from=+item.rangeFrom,to=+item.rangeTo;
+    const tc=TIER_C[item.tier];
+    const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+    const iconH=item.iconIsUrl?`<img src="${esc(item.icon)}" style="width:36px;height:36px;object-fit:contain" alt="" onerror="this.style.display='none'">`:esc(item.icon||ti.emoji);
+    const fee=sum&&item.sellOrder?sum.sp*(state.settings.setupFee/100)*sum.qty:0;
+    const inv=sum?sum.totalMC*sum.qty+sum.bp*sum.qty+fee:0;
+    const matPills=MAT_TYPES.filter(m=>sum&&sum.mc[m]>0).map(m=>{
+      const imgUrl=matImg(item.tier,m);
+      return`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <img src="${imgUrl}" style="width:22px;height:22px;object-fit:contain" alt="" onerror="this.style.display='none'">
+        <span style="font-weight:700;color:var(--gold-l)">${f(sum.mc[m]*sum.qty)}×</span>
+        <span style="font-size:.78rem;color:var(--muted)">${tMatFull(item.tier,m)}</span>
+      </span>`;
+    }).join('');
+    return`<div class="stab-card">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="stab-head" style="margin-bottom:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:1rem;margin-bottom:3px">${esc(item.name||tType(item.type))}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center">
+                <span style="color:${tc};font-weight:600">${item.tier}${ENC[from]}→${item.tier}${ENC[to]}</span>
+                <span class="sum-badge">× ${item.qty} ${pl?'szt.':'units'}</span>
+                <span class="sum-badge">${tQ(item.quality)}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn-to-market" data-tomarket="${item.id}">🏪 ${t('btn_to_market')}</button>
+              <button class="btn-rm" data-rmsum="${item.id}">✕</button>
+            </div>
+          </div>
+          ${sum?`<div class="stab-grid" style="margin-bottom:8px">
+            <div class="stab-kv"><div class="stab-k">${pl?'Inwestycja':'Investment'}</div><div class="stab-v" style="color:var(--red)">${f(inv)} 💰</div></div>
+            <div class="stab-kv"><div class="stab-k">${pl?'Zarobek':'Profit'}</div><div class="stab-v ${sum.profitQty>=0?'pg':'pb'}">${fp(sum.profitQty)} 💰</div></div>
+            <div class="stab-kv"><div class="stab-k">${pl?'Cena sprzedaży':'Sell price'}</div><div class="stab-v">${f(sum.sp)} 💰</div></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${matPills||`<span style="font-size:.8rem;color:var(--muted)">${pl?'brak danych':'no data'}</span>`}</div>`
+          :`<span class="sum-na">${t('fill_prices')}</span>`}
+        </div>
+        ${item.iconIsUrl?`<img src="${esc(item.icon)}" style="width:80px;height:80px;object-fit:contain;flex-shrink:0;border-radius:8px;background:rgba(0,0,0,.3);padding:4px" alt="" onerror="this.style.display='none'">`:''}
+      </div>
+    </div>`;
+  }).join(''):`<div class="pn" style="padding:24px;text-align:center">${t('sum_tab_empty')}</div>`;
+  return`<div class="tab-pane${active?' active':''}"><div style="padding:16px">${totals}${rows}</div></div>`;
+}
+
+function buildAwaitingTab(){
+  const pl=state.lang==='pl';
+  const active=state.activeTab==='awaiting';
+  const now=Date.now(),day=86400000,week=7*day,month=30*day;
+  const sh=state.salesHistory;
+  const pToday=sh.filter(s=>now-s.soldAt<day).reduce((a,s)=>a+s.profit,0);
+  const pWeek =sh.filter(s=>now-s.soldAt<week).reduce((a,s)=>a+s.profit,0);
+  const pMonth=sh.filter(s=>now-s.soldAt<month).reduce((a,s)=>a+s.profit,0);
+  const pAll  =sh.reduce((a,s)=>a+s.profit,0);
+  const statsHtml=`<div class="stats-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="stats-head" style="margin-bottom:0">${t('stats_title')}</div>
+      <button class="btn-rm" id="btn-clear-stats" style="font-size:.78rem;padding:4px 10px">${pl?'🗑️ Wyczyść statystyki':'🗑️ Clear stats'}</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stats-kv"><div class="stats-k">${t('stats_today')}</div><div class="stats-v">${fp(pToday)} 💰</div></div>
+      <div class="stats-kv"><div class="stats-k">${t('stats_week')}</div><div class="stats-v">${fp(pWeek)} 💰</div></div>
+      <div class="stats-kv"><div class="stats-k">${t('stats_month')}</div><div class="stats-v">${fp(pMonth)} 💰</div></div>
+      <div class="stats-kv"><div class="stats-k">${t('stats_all')}</div><div class="stats-v">${fp(pAll)} 💰</div></div>
+    </div>
+  </div>`;
+  const listings=state.listings;
+  const totValH=listings.length?`<div class="stab-total">
+    <div class="stab-kv"><div class="stab-k">${t('await_total_value')}</div><div class="stab-v">${f(listings.reduce((a,l)=>a+l.sp*l.qty,0))} 💰</div></div>
+    <div class="stab-kv"><div class="stab-k">${t('await_total_profit')}</div><div class="stab-v ${listings.reduce((a,l)=>a+l.profit,0)>=0?'pg':'pb'}">${fp(listings.reduce((a,l)=>a+l.profit,0))} 💰</div></div>
+  </div>`:'';
+  const listHtml=listings.length?listings.map(l=>{
+    const elapsed=now-l.listedAt;
+    const h=Math.floor(elapsed/3600000),m=Math.floor((elapsed%3600000)/60000);
+    const timeStr=h>0?`${h}h ${m}m`:`${m}m`;
+    const tc=TIER_C[l.tier]||'#aaa';
+    const iconH=l.iconUrl?`<img src="${esc(l.iconUrl)}" style="width:72px;height:72px;object-fit:contain" alt="" onerror="this.style.display='none'">`:esc(l.emoji||'📦');
+    const cityData=l.city?CITIES[l.city]:null;
+    const cityColor=cityData?.color||'var(--muted)';
+    return`<div class="await-card">
+      <div class="await-head">
+        <span style="font-size:1.4rem;line-height:1;flex-shrink:0">${iconH}</span>
+        <div class="await-info">
+          <div class="await-name" style="display:flex;align-items:center;gap:7px">
+            ${esc(l.name)}
+            ${cityData?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;color:${cityColor};background:rgba(0,0,0,.3);border:1px solid ${cityColor}44;border-radius:5px;padding:2px 7px">${cityData.icon} ${esc(l.city)}</span>`:''}
+          </div>
+          <div class="await-sub"><span style="color:${tc}">${l.tier}${l.enc}</span> · × ${l.qty} ${pl?'szt.':'units'} · ${t('listed_at')} ${timeStr} ${pl?'temu':'ago'}</div>
+        </div>
+        <div class="await-nums">
+          <div style="font-size:.85rem;color:var(--muted)">${pl?'Wartość':'Value'}: <strong style="color:var(--text)">${f(l.sp*l.qty)} 💰</strong></div>
+          <div style="font-size:.85rem;color:var(--muted)">${pl?'Zarobek':'Profit'}: <strong class="${l.profit>=0?'pg':'pb'}">${fp(l.profit)} 💰</strong></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <button class="btn-sold" data-sold="${l.id}">✓ ${t('btn_sold')}</button>
+          <button class="btn-rm" data-rmlisting="${l.id}" style="font-size:.78rem;padding:4px 10px">✕ ${pl?'Usuń':'Remove'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="pn" style="padding:20px;text-align:center">${t('await_tab_empty')}</div>`;
+  return`<div class="tab-pane${active?' active':''}"><div style="padding:16px">${statsHtml}${totValH}${listHtml}</div></div>`;
+}
+
+function buildItemCard(item){
+  const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+  const icon=item.icon||ti.emoji;
+  const iconH=item.iconIsUrl?`<img src="${esc(item.icon)}" alt="">`:esc(icon);
+  const fromOpts=[0,1,2].map(v=>`<option value="${v}"${v==item.rangeFrom?' selected':''}>${item.tier}${ENC[v]}</option>`).join('');
+  const toOpts=[1,2,3].filter(v=>v>+item.rangeFrom).map(v=>`<option value="${v}"${v==item.rangeTo?' selected':''}>${item.tier}${ENC[v]}</option>`).join('');
+  const tc=TIER_C[item.tier];
+  return`<div class="item-card" data-item="${item.id}">
+    <div class="item-top">
+      <div class="item-icon" data-iconclick="${item.id}">${iconH}<span class="icon-hint">✎</span></div>
+      <div class="item-fields">
+        <div class="fg"><div class="fl">${t('lbl_name')}</div>
+          <div class="search-wrap">
+            <input type="text" class="fi" style="width:180px" data-f="${item.id}-name" data-search-for="${item.id}"
+              value="${esc(item.name)}" placeholder="${t('search_placeholder')}" autocomplete="off">
+            <div class="search-dd" id="sdd-${item.id}" style="display:none"></div>
+          </div>
+        </div>
+        <div class="fg"><div class="fl">${t('lbl_type')}</div>
+          <select class="fi" data-f="${item.id}-type">
+            ${Object.keys(ITEM_TYPE_KEYS).map(k=>`<option value="${k}"${k===item.type?' selected':''}>${ITEM_TYPE_KEYS[k].emoji} ${tType(k)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><div class="fl">${t('lbl_tier')}</div>
+          <select class="fi" data-f="${item.id}-tier">
+            ${TIERS.map(tr=>`<option value="${tr}"${tr===item.tier?' selected':''} style="color:${TIER_C[tr]}">${tr}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><div class="fl">${t('lbl_quality')}</div>
+          <select class="fi" data-f="${item.id}-quality">
+            ${QUALITY_KEYS.map(k=>`<option value="${k}"${k===item.quality?' selected':''}>${tQ(k)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="item-ctrl">
+        <label class="so-btn${item.sellOrder?' on':''}">
+          <input type="checkbox" data-f="${item.id}-sellOrder"${item.sellOrder?' checked':''}>
+          📋 ${state.lang==='pl'?'Zlecenie sprzedaży':'Sell Order'}
+        </label>
+        <button class="btn-rm" data-rm="${item.id}">${t('lbl_remove')}</button>
+      </div>
+    </div>
+    <div class="item-body">
+      <div class="range-row">
+        <span class="range-lbl">${t('lbl_range')}</span>
+        <select class="rsel" data-f="${item.id}-rangeFrom">${fromOpts}</select>
+        <span class="arr-big">→</span>
+        <select class="rsel" data-f="${item.id}-rangeTo">${toOpts}</select>
+        <span class="range-info" style="color:${tc};border-color:${tc}44;background:${tc}11">${item.tier}${ENC[item.rangeFrom]} → ${item.tier}${ENC[item.rangeTo]}</span>
+      </div>
+      <div class="prices-row">
+        ${[0,1,2,3].map(i=>`
+          <div class="pg2">
+            <div class="pl"><span class="dot ${ENC_DOTS[i]}" style="background:${ENC_COLS[i]}"></span><span style="color:${ENC_COLS[i]};font-weight:700">${item.tier}${ENC[i]}</span></div>
+            <input type="number" class="pin" min="0" step="1" data-f="${item.id}-p${i}" value="${esc(item.prices['p'+i])}" placeholder="0">
+          </div>
+        `).join('')}
+        <div class="pg2"><div class="pl">${t('lbl_qty')}</div><input type="number" class="pin" min="1" step="1" data-f="${item.id}-qty" value="${item.qty||1}" placeholder="1"></div>
+        <div class="pg2"><div class="pl">${t('lbl_daily')}</div><input type="number" class="pin" min="0" step="1" data-f="${item.id}-dailyVol" value="${esc(item.dailyVol)}" placeholder="0"></div>
+      </div>
+      <div data-results="${item.id}">${buildResults(item)}</div>
+    </div>
+  </div>`;
+}
+
+function buildResults(item){
+  const mats=getMats();
+  const steps=[0,1,2].map(s=>calcStep(item,s,mats));
+  const sum=calcSummary(item,mats);
+  const from=+item.rangeFrom,to=+item.rangeTo;
+  const anyStep=steps.some(Boolean);
+  const showDly=steps.some(s=>s&&s.hasDailyVol);
+  const qty=parseInt(item.qty)||1;
+  const tax=getTaxRate(item);
+  const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+
+  const tableHtml=`<div class="tbl-wrap">
+    <table class="rtbl">
+      <thead><tr>
+        <th>${t('th_step')}</th>
+        <th>${t('th_mat')}</th>
+        <th>${t('th_mat_price')}</th>
+        <th>${t('th_mat_cost')}</th>
+        <th>${t('th_buy')}</th>
+        <th>${t('th_sell')}</th>
+        <th>${t('th_tax_u')} (${tax.sale}%${tax.setup>0?'+'+tax.setup+'%':''})</th>
+        <th>${t('th_tax_t')} ×${qty}</th>
+        <th>${t('th_p_u')}</th>
+        <th>${t('th_p_t')} ${qty}</th>
+        ${showDly?`<th>${t('th_daily')}</th>`:''}
+        <th>${t('th_worth')}</th>
+      </tr></thead>
+      <tbody>
+        ${[0,1,2].map(step=>{
+          const inRange=step>=from&&step<to;
+          const r=steps[step];
+          const sl=`${item.tier}${ENC[step]}→${ENC[step+1]}`;
+          const mimg=`<img src="${matImg(item.tier,STEP_MAT[step])}" alt="" onerror="this.style.display='none'">`;
+          if(!r)return`<tr class="${inRange?'rn':'rdim'}">
+            <td><span class="step-l" style="color:${STEP_COL[step]}">${inRange?'<span class="rdot"></span>':''}${sl}</span></td>
+            <td class="mat-cell">${mimg}<span>${tMat(STEP_MAT[step])}</span></td>
+            <td class="pn">—</td><td class="pn">—</td><td class="pn">—</td><td class="pn">—</td>
+            <td class="pn">—</td><td class="pn">—</td><td class="pn">—</td><td class="pn">—</td>
+            ${showDly?'<td class="pn">—</td>':''}
+            <td><span class="verdict vna">${t('no_data')}</span></td>
+          </tr>`;
+          const g=r.profit>=0;
+          return`<tr class="${inRange?(g?'rg':'rb'):'rdim'}">
+            <td><span class="step-l" style="color:${STEP_COL[step]}">${inRange?'<span class="rdot"></span>':''}${sl}</span></td>
+            <td class="mat-cell">${mimg}<div><span class="mq">${r.N*qty}×</span> ${tMatFull(item.tier,r.mt)}</div></td>
+            <td>${f(r.mp)}</td><td>${f(r.matCost)}</td>
+            <td>${f(r.bp)}</td><td>${f(r.sp)}</td>
+            <td class="pb">${f(r.taxAmt)}</td><td class="pb">${f(r.taxAmtQty)}</td>
+            <td class="${g?'pg':'pb'}">${fp(r.profit)}</td>
+            <td class="${g?'pg':'pb'}">${fp(r.profitQty)}</td>
+            ${showDly?`<td style="color:var(--gold);font-weight:700">${r.recDaily!=null?r.recDaily+t('s_per_day'):'—'}</td>`:''}
+            <td><span class="verdict ${inRange?(g?'vy':'vn'):'vna'}">${inRange?(g?'✓':'✗'):'—'}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  if(!anyStep)return`<div class="pn" style="padding:6px 0">${t('fill_prices')}</div>`;
+  return tableHtml+buildSummary(item,sum);
+}
+
+function buildSummary(item,sum){
+  const from=+item.rangeFrom,to=+item.rangeTo;
+  const mats=getMats();
+  const tc=TIER_C[item.tier];
+  const pl=state.lang==='pl';
+  if(!sum)return`<div class="sum-card"><span class="sum-na">${t('fill_range')} ${item.tier}${ENC[from]}→${item.tier}${ENC[to]},${t('to_see_sum')}</span></div>`;
+
+  // Separate components
+  const matCostTotal  = sum.totalMC * sum.qty;
+  const baseCostTotal = sum.bp * sum.qty;
+  const setupFeeTotal = item.sellOrder ? sum.sp * (state.settings.setupFee/100) * sum.qty : 0;
+  const salesTaxTotal = sum.sp * (state.premium ? state.settings.taxPrem : state.settings.taxNoPrem) / 100 * sum.qty;
+  const investment    = matCostTotal + baseCostTotal + setupFeeTotal;
+  const grossRevenue  = sum.sp * sum.qty;
+  const netRevenue    = grossRevenue - salesTaxTotal;
+  const totalProfit   = netRevenue - investment;  // = sum.profitQty
+  const roi = investment>0 ? (totalProfit/investment*100) : 0;
+  const roiStr = (roi>=0?'+':'')+roi.toFixed(1)+'%';
+  const g = totalProfit >= 0;
+
+  return`<div class="sum-card">
+    <div class="sum-head">
+      ${t('s_title')}
+      <span style="color:${tc};font-size:.95rem">${item.tier}${ENC[from]} → ${item.tier}${ENC[to]}</span>
+      <span class="sum-badge">× ${sum.qty} ${pl?'szt.':'units'}</span>
+      <span class="sum-badge">${tQ(item.quality)}</span>
+      <span class="sum-badge">${item.sellOrder?'📋 Sell Order':t('instant')}</span>
+    </div>
+    <div class="sum-lines">
+      <div class="sum-line">
+        <span class="sum-line-lbl">${pl?'Koszt materiałów':'Material cost'}</span>
+        <span class="sum-line-val" style="color:var(--red)">−${f(matCostTotal)} 💰</span>
+      </div>
+      <div class="sum-line">
+        <span class="sum-line-lbl">${pl?'Cena bazowych itemów':'Base item cost'}</span>
+        <span class="sum-line-val" style="color:var(--red)">−${f(baseCostTotal)} 💰</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(100,149,237,.1);border:1px solid rgba(100,149,237,.25);border-radius:8px;padding:8px 12px;margin:4px 0">
+        <span style="flex:1;font-size:.82rem;font-weight:700;color:#7aaeff">${pl?'🔨 Koszt enchantu (item + mat.)':'🔨 Enchant cost (item + mats)'}</span>
+        <span style="font-size:.95rem;font-weight:700;color:#7aaeff">−${f(matCostTotal+baseCostTotal)} 💰</span>
+      </div>
+      ${setupFeeTotal>0?`<div class="sum-line">
+        <span class="sum-line-lbl">${pl?`Podatek wystawienia (${state.settings.setupFee}%)`:`Listing fee (${state.settings.setupFee}%)`}</span>
+        <span class="sum-line-val" style="color:var(--red)">−${f(setupFeeTotal)} 💰</span>
+      </div>`:''}
+      <div class="sum-sep"></div>
+      <div class="sum-invest">
+        <span style="flex:1;font-size:.9rem;font-weight:700;color:var(--muted)">${pl?'💸 INWESTYCJA':'💸 INVESTMENT'}</span>
+        <span style="font-size:1.05rem;font-weight:700;color:var(--red)">${f(investment)} 💰</span>
+      </div>
+      <div class="sum-line" style="margin-top:6px;opacity:.8">
+        <span class="sum-line-lbl" style="font-size:.8rem">${pl?`Podatek od sprzedaży (${state.premium?state.settings.taxPrem:state.settings.taxNoPrem}%) – potrącany z przychodu`:`Sales tax (${state.premium?state.settings.taxPrem:state.settings.taxNoPrem}%) – deducted from revenue`}</span>
+        <span class="sum-line-val" style="color:var(--muted);font-size:.85rem">−${f(salesTaxTotal)} 💰</span>
+      </div>
+    </div>
+    <div class="sum-profit-box ${g?'good':'bad'}" style="margin-top:6px">
+      <div>
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">${pl?'ZAROBEK CAŁKOWITY':'TOTAL PROFIT'}</div>
+        <span class="sum-profit-big ${g?'pg':'pb'}">${fp(totalProfit)} 💰</span>
+        <span style="color:var(--muted);font-size:.82rem;margin-left:6px">${fp(sum.profit)} 💰 ${pl?'/ szt.':'/ unit'}</span>
+        <span style="display:inline-block;margin-left:10px;padding:3px 10px;border-radius:8px;font-size:.82rem;font-weight:700;background:${g?'rgba(76,175,80,.15)':'rgba(244,67,54,.15)'};border:1px solid ${g?'rgba(76,175,80,.4)':'rgba(244,67,54,.4)'};color:${g?'var(--green)':'var(--red)'}">${pl?'ROI':'ROI'}: ${roiStr}</span>
+      </div>
+      <span class="verdict ${g?'vy':'vn'}" style="font-size:.88rem;padding:5px 16px">${g?t('s_yes'):t('s_no')}</span>
+      ${sum.hasDailyVol&&sum.recDaily?`<span class="sum-daily">${t('s_daily')} <strong style="color:var(--gold)">${sum.recDaily}</strong>${t('s_per_day')}</span>`:''}
+    </div>
+    <div class="sum-act-row">
+      <button class="btn-add-sum${item.inSummary?' on':''}" data-togglesum="${item.id}">${item.inSummary?t('btn_in_sum'):t('btn_add_sum')}</button>
+      ${item.inSummary?`<button class="btn-to-market" data-tomarket="${item.id}">🏪 ${t('btn_to_market')}</button>`:''}
+      ${item.inSummary&&sum?(()=>{
+        const pl=state.lang==='pl';
+        const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+        const baseIconUrl=itemIconUrl(item);
+        const iconH=baseIconUrl
+          ?`<img src="${esc(baseIconUrl)}" style="width:22px;height:22px;object-fit:contain;vertical-align:middle" alt="" onerror="this.style.display='none'">`
+          :esc(item.icon||ti.emoji);
+        const tc=TIER_C[item.tier];
+        return`<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:.82rem">
+          ${iconH}
+          <strong style="color:var(--gold-l)">${item.qty||1}×</strong>
+          <span style="color:${tc}">${item.tier}${ENC[item.rangeFrom]}</span>
+          <span style="color:var(--muted)">${esc(item.name||tType(item.type))}</span>
+        </span>`;
+      })():''}
+      ${(()=>{
+        const listings=state.listings.filter(l=>l.itemId===item.id&&(!l.city||l.city===state.activeCity));
+        if(!listings.length)return'';
+        const pl=state.lang==='pl';
+        const now=Date.now();
+        return listings.map(l=>{
+          const elapsed=now-l.listedAt;
+          const h=Math.floor(elapsed/3600000),m=Math.floor((elapsed%3600000)/60000);
+          const timeStr=h>0?`${h}h ${m}m`:`${m}m`;
+          return`<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.35);border-radius:8px;font-size:.82rem;color:#4caf50;font-weight:600">
+            ⏳ ${pl?'Oczekuje na sprzedaż':'Awaiting sale'} · ${l.tier}${l.enc} × ${l.qty} · ${timeStr} ${pl?'temu':'ago'}
+          </span>`;
+        }).join('');
+      })()}
+    </div>
+  </div>`;
+}
+
+function buildIconModal(){
+  if(!state.iconModal)return'';
+  const item=getItems().find(i=>i.id===state.iconModal);
+  const val=item?item.icon:'';
+  const prev=val?(val.startsWith('http')?`<img src="${esc(val)}" onerror="this.style.display='none'">`:esc(val)):'?';
+  return`<div class="mbg" id="mbg">
+    <div class="mbox">
+      <h3>🖼️ ${state.lang==='pl'?'Ikona itemu':'Item icon'}</h3>
+      <p class="msub">${state.lang==='pl'?'Wpisz emoji lub URL z Albion CDN:':'Enter emoji or Albion CDN URL:'}<br>
+        <code>https://render.albiononline.com/v1/item/ITEM_ID</code><br>
+        ${state.lang==='pl'?'Np.':'E.g.'}: <code>T4_2H_CLAYMORE</code>, <code>T5_SWORD</code></p>
+      <input type="text" class="minp" id="m-inp" placeholder="⚔️ or https://…" value="${esc(val)}">
+      <div class="mprev" id="m-prev">${prev}</div>
+      <div class="mbtns">
+        <button class="bcnl" id="m-cancel">${state.lang==='pl'?'Anuluj':'Cancel'}</button>
+        <button class="bok"  id="m-ok">${state.lang==='pl'?'Zapisz':'Save'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════ RENDER ══════════
+function render(){buildApp();bind();}
+function refreshAllResults(){getItems().forEach(i=>refreshOne(i));save();}
+function refreshOne(item){const el=document.querySelector(`[data-results="${item.id}"]`);if(el)el.innerHTML=buildResults(item);}
+function rebuildCard(item){
+  const old=document.querySelector(`[data-item="${item.id}"]`);if(!old)return;
+  const tmp=document.createElement('div');tmp.innerHTML=buildItemCard(item);
+  const ne=tmp.firstElementChild;old.replaceWith(ne);bindCard(ne);save();
+}
+
+// ══════════ ITEM DATABASE (GitHub CDN, CORS enabled) ══════════
+let _itemDB=null,_itemDBLoading=false,_itemDBWaiters=[];
+async function getItemDB(){
+  if(_itemDB)return _itemDB;
+  if(_itemDBLoading)return new Promise(res=>_itemDBWaiters.push(res));
+  _itemDBLoading=true;
+  const sources=[
+    'https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json',
+    'https://raw.githubusercontent.com/broderickhyman/ao-bin-dumps/master/formatted/items.json',
+  ];
+  let raw=null;
+  for(const url of sources){
+    try{const r=await fetch(url);if(r.ok){raw=await r.json();break;}}catch(_){}
+  }
+  _itemDB={};
+  if(Array.isArray(raw)){
+    raw.forEach(item=>{
+      if(!item.UniqueName||!item.LocalizedNames)return;
+      if(item.UniqueName.includes('@'))return; // skip enchanted variants – only base items
+      const en=(item.LocalizedNames['EN-US']||'').trim();
+      const pl=(item.LocalizedNames['PL-PL']||'').trim();
+      if(!en&&!pl)return;
+      _itemDB[item.UniqueName]={en,pl};
+    });
+  }
+  _itemDBLoading=false;
+  _itemDBWaiters.forEach(fn=>fn(_itemDB));
+  _itemDBWaiters=[];
+  return _itemDB;
+}
+
+// ══════════ SEARCH AUTOCOMPLETE ══════════
+const _sTimers={};
+
+async function triggerSearch(inp,itemId){
+  const query=inp.value.trim();
+  const dd=document.getElementById(`sdd-${itemId}`);
+  if(!dd)return;
+  if(query.length<2){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=`<div class="sdd-msg">${t('search_searching')}</div>`;
+  clearTimeout(_sTimers[itemId]);
+  _sTimers[itemId]=setTimeout(async()=>{
+    const item=getItems().find(i=>i.id===itemId);
+    if(!item)return;
+    if(!_itemDB)dd.innerHTML=`<div class="sdd-msg">${t('search_loading')}</div>`;
+    const db=await getItemDB();
+    if(!db||!Object.keys(db).length){
+      dd.innerHTML=`<div class="sdd-msg">${t('search_err')}</div>`;return;
+    }
+    const q=query.toLowerCase();
+    const tierPfx=item.tier+'_';
+    // Collect ALL matches (no early break), search both en + pl
+    const hits=[];
+    for(const [uname,names] of Object.entries(db)){
+      if(!uname.startsWith(tierPfx))continue;
+      const en=(names.en||'').toLowerCase();
+      const pl=(names.pl||'').toLowerCase();
+      if(!en.includes(q)&&!pl.includes(q))continue;
+      const display=state.lang==='pl'?(names.pl||names.en||uname):(names.en||names.pl||uname);
+      const score=(en.startsWith(q)||pl.startsWith(q))?2:
+                  (en.includes(' '+q)||pl.includes(' '+q))?1:0;
+      hits.push({uname,display,score});
+    }
+    if(!hits.length){dd.innerHTML=`<div class="sdd-msg">${t('search_none')}</div>`;return;}
+    hits.sort((a,b)=>b.score-a.score||a.display.localeCompare(b.display,'pl'));
+    dd.innerHTML=hits.slice(0,16).map(h=>{
+      const iUrl=`https://render.albiononline.com/v1/item/${encodeURIComponent(h.uname)}.png`;
+      return`<div class="sdd-item" data-pick="${esc(h.uname)}" data-dname="${esc(h.display)}" data-iid="${itemId}">
+        <img src="${iUrl}" alt="" onerror="this.style.display='none'">
+        <span class="sdd-name">${esc(h.display)}</span>
+      </div>`;
+    }).join('');
+    dd.querySelectorAll('.sdd-item').forEach(el=>el.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      const uniqueName=el.dataset.pick,dname=el.dataset.dname,iid=+el.dataset.iid;
+      const base=uniqueName.replace(/^T\d+_/,'');
+      const autoType=guessItemType(uniqueName);
+      let pickedItem=null;
+      setItem(iid,it=>{
+        it.name=dname;
+        it.uniqueBaseName=base;
+        it.type=autoType;
+        it.icon=itemIconUrl(it); // respects current tier + rangeFrom
+        it.iconIsUrl=true;
+        pickedItem=it;
+      });
+      inp.value=dname;
+      dd.style.display='none';
+      // Full card rebuild since type may have changed
+      if(pickedItem)rebuildCard(pickedItem);
+      else save();
+    }));
+  },350);
+}
+
+// ══════════ LISTING / SELLING ══════════
+function createListing(itemId){
+  const item=getItems().find(i=>i.id===itemId);if(!item)return;
+  const mats=getMats();
+  const sum=calcSummary(item,mats);
+  const ti=ITEM_TYPE_KEYS[item.type]||ITEM_TYPE_KEYS['1h'];
+  const to=+item.rangeTo;
+  const fee=sum&&item.sellOrder?sum.sp*(state.settings.setupFee/100)*sum.qty:0;
+  state.listings.push({
+    id:Date.now()+Math.random(),
+    listedAt:Date.now(),
+    itemId,
+    city:state.activeCity,
+    name:item.name||tType(item.type),
+    tier:item.tier,
+    enc:ENC[to],
+    sp:sum?sum.sp:0,
+    qty:sum?sum.qty:(parseInt(item.qty)||1),
+    profit:sum?sum.profitQty:0,
+    investment:sum?sum.totalMC*sum.qty+sum.bp*sum.qty+fee:0,
+    iconUrl:itemIconUrl({...item,rangeFrom:to})||( item.iconIsUrl?item.icon:null),
+    emoji:!item.iconIsUrl?(item.icon||ti.emoji):null,
+  });
+  // Remove from summary – item is now in "awaiting" state
+  setItem(itemId,it=>{it.inSummary=false;});
+  save();render();
+}
+
+function soldListing(lid){
+  const l=state.listings.find(x=>x.id===lid);if(!l)return;
+  state.salesHistory.push({id:lid,soldAt:Date.now(),listedAt:l.listedAt,name:l.name,tier:l.tier,enc:l.enc,profit:l.profit,qty:l.qty});
+  state.listings=state.listings.filter(x=>x.id!==lid);
+  // uncheck inSummary on the source item
+  setItem(l.itemId,it=>{it.inSummary=false;});
+  save();render();
+}
+
+// ══════════ BIND ══════════
+function bind(){
+  on('btn-prem','click',()=>{state.premium=!state.premium;render();});
+  qsa('.tab-btn').forEach(el=>on(el,'click',()=>{state.activeTab=el.dataset.tab;render();}));
+  // Sort buttons
+  qsa('[data-sortkey]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.sortkey;
+    if(state.sort.key===k){
+      if(k==='none') return;
+      state.sort.dir=state.sort.dir==='asc'?'desc':'asc';
+    } else {
+      state.sort={key:k,dir:'asc'};
+    }
+    render();
+  }));
+  // Language buttons
+  qsa('[data-lang]').forEach(el=>el.addEventListener('click',()=>{
+    if(state.lang!==el.dataset.lang){state.lang=el.dataset.lang;render();}
+  }));
+  // City panel
+  on('city-btn','click',e=>{
+    e.stopPropagation();
+    const p=document.getElementById('city-panel');if(!p)return;
+    const open=p.classList.toggle('open');
+    document.getElementById('city-btn').classList.toggle('open',open);
+  });
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('#city-wrap')){
+      const p=document.getElementById('city-panel');if(p)p.classList.remove('open');
+      const b=document.getElementById('city-btn');if(b)b.classList.remove('open');
+    }
+  });
+  qsa('[data-ctile]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();const c=el.dataset.ctile;
+    if(c!==state.activeCity){state.activeCity=c;render();}
+    else{const p=document.getElementById('city-panel');if(p)p.classList.remove('open');}
+  }));
+  // Materials
+  qsa('[data-mat]').forEach(el=>el.addEventListener('input',()=>{
+    const[tier,m]=el.dataset.mat.split('-');
+    if(!state.materialsByCity[state.activeCity])state.materialsByCity[state.activeCity]=emptyMats();
+    state.materialsByCity[state.activeCity][tier][m]=el.value;
+    refreshAllResults();
+  }));
+  // Settings
+  qsa('[data-sett]').forEach(el=>el.addEventListener('input',()=>{
+    state.settings[el.dataset.sett]=parseFloat(el.value)||0;refreshAllResults();
+  }));
+  // Add item
+  on('btn-add','click',()=>{
+    if(!state.itemsByCity[state.activeCity])state.itemsByCity[state.activeCity]=[];
+    state.itemsByCity[state.activeCity].push(newItem());render();
+  });
+  // Item fields
+  qsa('[data-f]').forEach(el=>{
+    const evts=el.type==='checkbox'?['change']:['input','change'];
+    evts.forEach(ev=>el.addEventListener(ev,()=>handleF(el)));
+  });
+  // Remove
+  qsa('[data-rm]').forEach(el=>on(el,'click',()=>{
+    state.itemsByCity[state.activeCity]=state.itemsByCity[state.activeCity].filter(i=>i.id!==+el.dataset.rm);
+    render();
+  }));
+  // Icon
+  qsa('[data-iconclick]').forEach(el=>on(el,'click',()=>{state.iconModal=+el.dataset.iconclick;render();}));
+  // Modal
+  const mi=document.getElementById('m-inp');
+  if(mi){
+    mi.focus();
+    mi.addEventListener('input',()=>{
+      const v=mi.value.trim(),p=document.getElementById('m-prev');
+      if(p)p.innerHTML=v?(v.startsWith('http')?`<img src="${esc(v)}" onerror="this.style.display='none'">`:esc(v)):'?';
+    });
+  }
+  on('m-cancel','click',()=>{state.iconModal=null;render();});
+  on('m-ok','click',()=>{
+    if(mi&&state.iconModal){const v=mi.value.trim();
+      setItem(state.iconModal,item=>{item.icon=v||(ITEM_TYPE_KEYS[item.type]||{}).emoji||'📦';item.iconIsUrl=v.startsWith('http://') || v.startsWith('https://');});}
+    state.iconModal=null;render();
+  });
+  on('mbg','click',e=>{if(e.target.id==='mbg'){state.iconModal=null;render();}});
+  // Delegated: togglesum, tomarket, sold buttons
+  document.getElementById('tc').addEventListener('click',e=>{
+    const ts=e.target.closest('[data-togglesum]');
+    if(ts){const id=+ts.dataset.togglesum;setItem(id,it=>{it.inSummary=!it.inSummary;});
+      ts.classList.toggle('on');ts.textContent=ts.classList.contains('on')?t('btn_in_sum'):t('btn_add_sum');
+      // show/hide the market button without full rebuild
+      const actRow=ts.closest('.sum-act-row');
+      if(actRow){
+        let mb=actRow.querySelector('.btn-to-market');
+        const item=getItems().find(i=>i.id===id);
+        if(item&&item.inSummary&&!mb){mb=document.createElement('button');mb.className='btn-to-market';mb.dataset.tomarket=id;mb.textContent='🏪 '+t('btn_to_market');actRow.appendChild(mb);}
+        else if(!item?.inSummary&&mb)mb.remove();
+      }
+      save();return;}
+    const tm=e.target.closest('[data-tomarket]');
+    if(tm){createListing(+tm.dataset.tomarket);return;}
+    const sold=e.target.closest('[data-sold]');
+    if(sold){soldListing(+sold.dataset.sold);return;}
+    // Remove from summary tab (uncheck inSummary)
+    const rs=e.target.closest('[data-rmsum]');
+    if(rs){const id=+rs.dataset.rmsum;setItem(id,it=>{it.inSummary=false;});save();render();return;}
+    // Remove listing from awaiting tab (cancel listing)
+    const rl=e.target.closest('[data-rmlisting]');
+    if(rl){state.listings=state.listings.filter(x=>x.id!==+rl.dataset.rmlisting);save();render();return;}
+  });
+  // Clear stats button (rendered inside #tc, bind after render)
+  on('btn-clear-stats','click',()=>{
+    const pl=state.lang==='pl';
+    const msg=pl
+      ?'Czy na pewno chcesz wyczyścić całą historię sprzedaży? Tej operacji nie można cofnąć.'
+      :'Are you sure you want to clear all sales history? This cannot be undone.';
+    if(confirm(msg)){state.salesHistory=[];save();render();}
+  });
+  // Search input binding for items tab
+  bindSearchInputs(document);
+}
+
+function bindSearchInputs(root){
+  root.querySelectorAll('[data-search-for]').forEach(inp=>{
+    const iid=+inp.dataset.searchFor;
+    inp.addEventListener('input',()=>triggerSearch(inp,iid));
+    inp.addEventListener('focus',()=>{if(inp.value.length>=2)triggerSearch(inp,iid);});
+    inp.addEventListener('blur',()=>setTimeout(()=>{const dd=document.getElementById(`sdd-${iid}`);if(dd)dd.style.display='none';},200));
+  });
+}
+function bindCard(el){
+  el.querySelectorAll('[data-f]').forEach(inp=>{
+    const evts=inp.type==='checkbox'?['change']:['input','change'];
+    evts.forEach(ev=>inp.addEventListener(ev,()=>handleF(inp)));
+  });
+  el.querySelectorAll('[data-rm]').forEach(btn=>on(btn,'click',()=>{
+    state.itemsByCity[state.activeCity]=state.itemsByCity[state.activeCity].filter(i=>i.id!==+btn.dataset.rm);render();
+  }));
+  el.querySelectorAll('[data-iconclick]').forEach(ic=>on(ic,'click',()=>{state.iconModal=+ic.dataset.iconclick;render();}));
+  bindSearchInputs(el);
+}
+
+// Returns the correct icon URL for an item considering tier + rangeFrom enchant level
+function itemIconUrl(item){
+  if(!item.uniqueBaseName)return null;
+  const enc=(+item.rangeFrom)>0?`@${item.rangeFrom}`:'';
+  return`https://render.albiononline.com/v1/item/${encodeURIComponent(item.tier+'_'+item.uniqueBaseName+enc)}.png`;
+}
+
+// Auto-detect item type from Albion unique name
+function guessItemType(uname){
+  const b=uname.replace(/^T\d+_/,'');
+  if(b.startsWith('2H_'))return '2h';
+  if(b.startsWith('GATHERER_HEADGEAR')||b.startsWith('GATHERER_HEAD'))return 'g_helm';
+  if(b.startsWith('GATHERER_ARMOR'))return 'g_armor';
+  if(b.startsWith('GATHERER_SHOES'))return 'g_boots';
+  if(b.startsWith('GATHERER_BACKPACK'))return 'g_bag';
+  if(b.startsWith('HEAD_'))return 'helm';
+  if(b.startsWith('ARMOR_'))return 'armor';
+  if(b.startsWith('SHOES_'))return 'boots';
+  if(b.startsWith('BAG'))return 'bag';
+  if(b.startsWith('CAPE'))return 'cape';
+  if(b.startsWith('OFF_'))return 'offhand';
+  // 1H: MAIN_*, single staffs, daggers, etc.
+  return '1h';
+}
+
+function handleF(el){
+  const parts=el.dataset.f.split('-'),id=+parts[0],field=parts.slice(1).join('-');
+  let item=null;setItem(id,i=>{item=i;});if(!item)return;
+  let needCard=false;
+  switch(field){
+    case 'name':      item.name=el.value;save();return;
+    case 'quality':   item.quality=el.value;break;
+    case 'sellOrder': item.sellOrder=el.checked;
+      {const btn=el.closest('.so-btn');if(btn)btn.classList.toggle('on',item.sellOrder);}
+      break;
+    case 'qty':       item.qty=parseInt(el.value)||1;break;
+    case 'dailyVol':  item.dailyVol=el.value;break;
+    case 'p0': item.prices.p0=el.value;break;
+    case 'p1': item.prices.p1=el.value;break;
+    case 'p2': item.prices.p2=el.value;break;
+    case 'p3': item.prices.p3=el.value;break;
+    case 'type': item.type=el.value;needCard=true;break;
+    case 'tier': item.tier=el.value;
+      if(item.uniqueBaseName){item.icon=itemIconUrl(item);item.iconIsUrl=true;}
+      needCard=true;break;
+    case 'rangeFrom': item.rangeFrom=+el.value;
+      if(+item.rangeTo<=+item.rangeFrom)item.rangeTo=Math.min(3,+item.rangeFrom+1);
+      if(item.uniqueBaseName){item.icon=itemIconUrl(item);item.iconIsUrl=true;}
+      needCard=true;break;
+    case 'rangeTo': item.rangeTo=+el.value;needCard=true;break;
+  }
+  if(needCard){rebuildCard(item);return;}
+  refreshOne(item);save();
+}
+
+// ══════════ UTILS ══════════
+const qsa=s=>document.querySelectorAll(s);
+function on(e,ev,fn){const el=typeof e==='string'?document.getElementById(e):e;if(el)el.addEventListener(ev,fn);}
+
+// ══════════ PERSIST ══════════
+function save(){
+  try{localStorage.setItem('ao_ec_v7',JSON.stringify({
+    lang:state.lang,premium:state.premium,activeCity:state.activeCity,activeTab:state.activeTab,
+    materialsByCity:state.materialsByCity,settings:state.settings,itemsByCity:state.itemsByCity,nextId,
+    listings:state.listings,salesHistory:state.salesHistory,sort:state.sort
+  }));}catch(_){}
+}
+function load(){
+  try{
+    const raw=localStorage.getItem('ao_ec_v7')||localStorage.getItem('ao_ec_v6')||'null';
+    const d=JSON.parse(raw);
+    if(!d)return;
+    state.lang=d.lang??'pl';state.premium=d.premium??false;
+    state.activeCity=d.activeCity??'Bridgewatch';state.activeTab=d.activeTab??'items';
+    state.settings={...state.settings,...(d.settings||{})};
+    state.listings=d.listings??[];
+    state.salesHistory=d.salesHistory??[];
+    if(d.sort)state.sort=d.sort;
+    CITY_LIST.forEach(c=>{
+      if(d.materialsByCity?.[c])state.materialsByCity[c]={...emptyMats(),...d.materialsByCity[c]};
+      if(d.itemsByCity?.[c])state.itemsByCity[c]=(d.itemsByCity[c]||[]).map(i=>{
+        const type=OLD_TYPE_MAP[i.type]||i.type||'1h';
+        const quality=OLD_QUAL_MAP[i.quality]||i.quality||'Normal';
+        return{rangeFrom:0,rangeTo:3,quality:'Normal',sellOrder:false,qty:1,dailyVol:'',inSummary:false,uniqueBaseName:'',...i,type,quality};
+      });
+    });
+    nextId=d.nextId??(1+Math.max(0,...CITY_LIST.flatMap(c=>(state.itemsByCity[c]||[]).map(i=>i.id||0))));
+  }catch(_){}
+}
+
+// ══════════ SUPABASE SYNC ══════════
+const SB_URL  = 'https://evusmbdcaxnuuetaqhkx.supabase.co';
+const SB_KEY  = 'sb_publishable_4Z0G4g1lFUnaV9vk5Kaoww_tLbKr0B_';
+const SB_TABLE= 'calculator_data';
+
+let cloudNick = localStorage.getItem('ao_nick')||null;
+let cloudSyncTimer = null;
+let cloudStatus = 'idle'; // idle | syncing | ok | error
+
+function sbH(){
+  return{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+}
+
+function setSyncStatus(s,msg=''){
+  cloudStatus=s;
+  const el=document.getElementById('sync-status');
+  if(!el)return;
+  const map={idle:['',''],syncing:['🔄',''],ok:['☁️ zsync','var(--green)'],error:['⚠️ błąd sync','var(--red)']};
+  const [txt,col]=map[s]||map.idle;
+  el.textContent=txt+(msg?' · '+msg:'');
+  el.style.color=col||'var(--muted)';
+}
+
+async function loadFromCloud(nick){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}?nick=eq.${encodeURIComponent(nick)}&select=*`,{headers:sbH()});
+    if(!r.ok)return null;
+    const rows=await r.json();
+    return rows.length?rows[0]:null;
+  }catch{return null;}
+}
+
+async function saveToCloud(){
+  if(!cloudNick)return;
+  setSyncStatus('syncing');
+  try{
+    const raw=localStorage.getItem('ao_ec_v7')||'{}';
+    const payload={nick:cloudNick,data:JSON.parse(raw),updated_at:new Date().toISOString()};
+    const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}`,{
+      method:'POST',
+      headers:{...sbH(),'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(payload)
+    });
+    setSyncStatus(r.ok?'ok':'error');
+  }catch{setSyncStatus('error');}
+}
+
+function scheduleSync(){
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(saveToCloud,15000);
+}
+
+// Patch save() to also schedule cloud sync
+const _origSave=save;
+function save(){_origSave();if(cloudNick)scheduleSync();}
+
+// Save on tab close
+window.addEventListener('beforeunload',()=>{
+  if(!cloudNick)return;
+  const raw=localStorage.getItem('ao_ec_v7')||'{}';
+  const payload={nick:cloudNick,data:JSON.parse(raw),updated_at:new Date().toISOString()};
+  // sendBeacon for reliable close-tab saves
+  const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+  navigator.sendBeacon&&navigator.sendBeacon(
+    `${SB_URL}/rest/v1/${SB_TABLE}?apikey=${SB_KEY}`,blob
+  );
+});
+
+// ── LOGIN MODAL ──
+function buildLoginModal(){
+  return`<div id="login-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(6px)">
+    <div style="background:var(--s1);border:2px solid var(--gold-d);border-radius:18px;padding:36px 32px;width:92%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+      <div style="font-size:3rem;margin-bottom:10px">⚗️</div>
+      <div style="font-size:1.2rem;font-weight:700;color:var(--gold-l);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Albion Enchant Calc</div>
+      <div style="font-size:.85rem;color:var(--muted);margin-bottom:24px">Podaj swój nick z Albion Online lub Discorda.<br>To Twój identyfikator — dane są przypisane do nicku.</div>
+      <input id="nick-input" type="text" placeholder="Twój nick..." autocomplete="off" spellcheck="false"
+        style="width:100%;background:var(--s2);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:12px 16px;font-size:1rem;text-align:center;margin-bottom:8px;outline:none">
+      <div id="nick-status" style="font-size:.8rem;color:var(--muted);min-height:20px;margin-bottom:14px"></div>
+      <button id="nick-confirm" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--gold-d),#8a6a25);border:none;border-radius:10px;color:var(--gold-l);font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.5px">
+        Wejdź do kalkulatora →
+      </button>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:14px">Nick nie jest hasłem — ktoś znający Twój nick może odczytać dane</div>
+    </div>
+  </div>`;
+}
+
+async function doLogin(nick){
+  nick=nick.trim();
+  if(!nick)return;
+  const statusEl=document.getElementById('nick-status');
+  const btn=document.getElementById('nick-confirm');
+  if(statusEl)statusEl.textContent='🔄 Łączę z chmurą...';
+  if(btn)btn.disabled=true;
+
+  const row=await loadFromCloud(nick);
+  if(row&&row.data){
+    // Load cloud data
+    localStorage.setItem('ao_ec_v7',JSON.stringify(row.data));
+    load();
+  }
+  // Save nick locally
+  localStorage.setItem('ao_nick',nick);
+  cloudNick=nick;
+
+  // Remove login overlay and render
+  const ov=document.getElementById('login-overlay');
+  if(ov)ov.remove();
+  render();
+  updateNickDisplay();
+  setSyncStatus('ok');
+}
+
+function updateNickDisplay(){
+  const el=document.getElementById('nick-display');
+  if(!el||!cloudNick)return;
+  // Insert nick text before the logout button
+  let span=el.querySelector('.nick-txt');
+  if(!span){span=document.createElement('span');span.className='nick-txt';el.insertBefore(span,el.firstChild);}
+  span.textContent='👤 '+cloudNick;
+  el.style.display='flex';
+}
+
+function logout(){
+  if(!confirm('Wylogować się? (dane pozostają w chmurze)'))return;
+  clearTimeout(cloudSyncTimer);
+  localStorage.removeItem('ao_nick');
+  cloudNick=null;
+  // Show login overlay
+  document.body.insertAdjacentHTML('beforeend',buildLoginModal());
+  bindLoginModal();
+}
+
+function bindLoginModal(){
+  const inp=document.getElementById('nick-input');
+  const btn=document.getElementById('nick-confirm');
+  if(inp){
+    inp.focus();
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin(inp.value);});
+    inp.addEventListener('input',()=>{
+      const s=document.getElementById('nick-status');
+      if(s)s.textContent='';
+    });
+  }
+  if(btn)btn.addEventListener('click',()=>doLogin(inp?inp.value:''));
+}
+
+// ══════════ INIT ══════════
+load();
+
+(async()=>{
+  if(cloudNick){
+    // Auto-login: try to sync from cloud
+    render();
+    updateNickDisplay();
+    const row=await loadFromCloud(cloudNick);
+    if(row&&row.data){
+      const localRaw=localStorage.getItem('ao_ec_v7');
+      const localTime=localRaw?JSON.parse(localRaw)?.updated_at_ts||0:0;
+      const cloudTime=new Date(row.updated_at).getTime();
+      if(cloudTime>localTime){
+        // Cloud is newer — reload
+        localStorage.setItem('ao_ec_v7',JSON.stringify(row.data));
+        load();render();
+      }
+    }
+    setSyncStatus('ok');
+  } else {
+    render();
+    document.body.insertAdjacentHTML('beforeend',buildLoginModal());
+    bindLoginModal();
+  }
+})();
+
+window.addEventListener('scroll',()=>{
+  const scrolled=window.scrollY>300;
+  const atBottom=window.scrollY+window.innerHeight>=document.body.scrollHeight-100;
+  const btnT=document.getElementById('btn-top');
+  const btnB=document.getElementById('btn-bot');
+  if(btnT)btnT.classList.toggle('vis',scrolled);
+  if(btnB)btnB.classList.toggle('vis',!atBottom&&document.body.scrollHeight>window.innerHeight+200);
+},{passive:true});
+</script>
+</body>
+</html>
